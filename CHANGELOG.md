@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- A double click or double tap on a wall in the editor lets you type its length to the centimeter, and lock it so that dragging the plan around it leaves its length as it is.
+
 ## [1.11.0] - 2026-11-13
 
 ### Added

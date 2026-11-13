@@ -21,6 +21,7 @@ import { traceFrom, useTrace } from '#/editor/trace.ts'
 import type { Selection, Tool } from '#/editor/types.ts'
 import { fitView, roomCenter, round, type View } from '#/editor/view.ts'
 import { snapToWall } from '#/editor/walls.ts'
+import { holdsLocks, removeCorner } from '#/editor/wallLength.ts'
 import { freePlacement, isValidRoom, pointOnBoundary, pointStrictlyInside } from '#/geometry/overlap.ts'
 import { decorationKind, type DecorationKind } from '#/decoration/catalog.ts'
 import { modelKindId, registerModels } from '#/decoration/models.ts'
@@ -697,7 +698,8 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
       selection.vertex === null
         ? room.points.map(move)
         : room.points.map((p, i) => (i === selection.vertex ? move(p) : p))
-    if (isValidRoom(points, others)) updateRoom(room.id, { points })
+    if (isValidRoom(points, others) && holdsLocks(room.points, points, room.locked_walls))
+      updateRoom(room.id, { points })
   }
 
   const duplicateSelected = () => {
@@ -1120,7 +1122,8 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
   const deleteSelectedVertex = () => {
     const room = rooms.find(r => r.id === selection.roomId)
     if (!room || selection.vertex === null || room.points.length <= 3) return
-    updateRoom(room.id, { points: room.points.filter((_, i) => i !== selection.vertex) })
+    const next = removeCorner(room, selection.vertex)
+    commit(rooms.map(r => (r.id === room.id ? next : r)))
     setSelection({ roomId: room.id, vertex: null })
   }
 
