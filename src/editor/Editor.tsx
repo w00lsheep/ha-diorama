@@ -27,6 +27,7 @@ import { decorationKind, type DecorationKind } from '#/decoration/catalog.ts'
 import { modelKindId, registerModels } from '#/decoration/models.ts'
 import { ridersOf, spotOn } from '#/decoration/surfaces.ts'
 import { entityGone } from '#/devices/catalog.ts'
+import { useUndo } from '#/editor/undo.ts'
 import { initialTry, toggleTry, type TryState, type TryStates } from '#/editor/tryState.ts'
 import { deviceTry } from '#/scene/Devices.tsx'
 import { DEFAULT_FLOOR_MATERIAL, SCENE_BACKGROUND_CSS } from '#/theme.ts'
@@ -398,6 +399,22 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
     else delete next.floors
     onChange(next)
   }
+
+  // Ctrl Z and Ctrl Shift Z. A step taken back or forward leaves any drawing
+  // under way, and lets go of a selection that is no longer there.
+  const history = useUndo(config, onChange)
+  const timeTravel = (forward: boolean) => {
+    if (!(forward ? history.redo() : history.undo())) return
+    setDraft([])
+  }
+  useEffect(() => {
+    if (selectedDecoration && !decorations.some(d => d.id === selectedDecoration)) setSelectedDecoration(null)
+    const room = selection.roomId ? rooms.find(r => r.id === selection.roomId) : undefined
+    if (selection.roomId && !room) setSelection({ roomId: null, vertex: null })
+    else if (room && selection.vertex !== null && selection.vertex >= room.points.length)
+      setSelection({ roomId: room.id, vertex: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms, decorations])
 
   // A device removed from Home Assistant lets go of what it drove, so the
   // card never holds on to an entity that is no longer there.
@@ -1135,6 +1152,12 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
     // The usual editing commands, on Ctrl everywhere and Cmd on a Mac.
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       switch (e.key.toLowerCase()) {
+        case 'z':
+          timeTravel(e.shiftKey)
+          break
+        case 'y':
+          timeTravel(true)
+          break
         case 'd':
           duplicateSelected()
           break

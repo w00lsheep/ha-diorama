@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- The editor has undo and redo: Ctrl Z takes the last change back and Ctrl Shift Z or Ctrl Y brings it back again, with Cmd on a Mac.
+
 ## [1.12.0] - 2026-11-13
 
 ### Added

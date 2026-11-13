@@ -111,12 +111,16 @@ The commands every drawing program has, with the same keys. They all show in the
 
 | Command                    | How                                                                                                             |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Undo                       | Ctrl Z, Cmd Z on a Mac                                                                                          |
+| Redo                       | Ctrl Shift Z or Ctrl Y, Cmd Shift Z on a Mac                                                                    |
 | Duplicate                  | Alt or Option and drag, or Ctrl D, Cmd D on a Mac                                                               |
 | Copy and paste an item     | Ctrl C and Ctrl V. Paste drops the copy in the selected room, so an item can be copied from one room to another |
 | Rotate 90°                 | R                                                                                                               |
 | Move by one grid step      | Arrow keys, with Shift for a 5 cm step                                                                          |
 | Delete                     | Del or Backspace                                                                                                |
 | Deselect, cancel a drawing | Escape                                                                                                          |
+
+Undo and redo go through every change to the card made in the editor, a held arrow key or a name typed in one go being one step. In a text field the field's own undo works instead.
 
 Alt and drag copies furniture and rooms. A duplicated room keeps its shape and floor but not its area, since an area stands for one room. A copy released on top of another room moves to the nearest free spot. A copy is never bound to the original's entity, since an entity is stood in for once.
 
