@@ -1,0 +1,614 @@
+# IKEA TVÄRHAND Tischleuchte (Fuß 18x12x2 cm, H 47 cm) mit MOLNART G125 (Ø 12,5 cm, Rauchglas, Spiralwendel). Bindbar an light.*
+name: IKEA Tvaerhand Molnart
+file: ikea_tvaerhand_molnart
+mount: floor
+segments: 32
+parts:
+- name: Fuss
+  shape: box
+  size: [0.18, 0.02, 0.12]
+  radius: 0.008
+  at: [0, 0, 0]
+  color: '#c99d62'
+  finish: wood
+- name: Gestell
+  shape: cylinder
+  radius: 0.016
+  height: 0.004
+  at: [0.065, 0.02, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.065, 0.022, 0]
+  to: [0.065, 0.43, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.065, 0.43, 0]
+  to: [0.0638, 0.4391, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [0.0638, 0.4391, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.0638, 0.4391, 0]
+  to: [0.0603, 0.4475, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [0.0603, 0.4475, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.0603, 0.4475, 0]
+  to: [0.0547, 0.4547, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [0.0547, 0.4547, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.0547, 0.4547, 0]
+  to: [0.0475, 0.4603, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [0.0475, 0.4603, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.0475, 0.4603, 0]
+  to: [0.0391, 0.4638, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [0.0391, 0.4638, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.0391, 0.4638, 0]
+  to: [0.03, 0.465, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [0.03, 0.465, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [0.03, 0.465, 0]
+  to: [-0.03, 0.465, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.03, 0.465, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.03, 0.465, 0]
+  to: [-0.0391, 0.4638, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.0391, 0.4638, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.0391, 0.4638, 0]
+  to: [-0.0475, 0.4603, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.0475, 0.4603, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.0475, 0.4603, 0]
+  to: [-0.0547, 0.4547, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.0547, 0.4547, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.0547, 0.4547, 0]
+  to: [-0.0603, 0.4475, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.0603, 0.4475, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.0603, 0.4475, 0]
+  to: [-0.0638, 0.4391, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.0638, 0.4391, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.0638, 0.4391, 0]
+  to: [-0.065, 0.43, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: sphere
+  radius: 0.005
+  segments: 12
+  at: [-0.065, 0.43, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: rod
+  from: [-0.065, 0.43, 0]
+  to: [-0.065, 0.405, 0]
+  radius: 0.005
+  segments: 16
+  color: '#1d1d1f'
+  finish: matte
+- name: Gestell
+  shape: lathe
+  profile:
+  - [0, 0.335]
+  - [0.022, 0.335]
+  - [0.022, 0.399]
+  - [0.018, 0.405]
+  - [0, 0.405]
+  at: [-0.065, 0, 0]
+  color: '#1d1d1f'
+  finish: matte
+- name: Glas
+  shape: lathe
+  profile:
+  - [0, 0.1941]
+  - [0.0082, 0.1946]
+  - [0.0162, 0.1962]
+  - [0.0239, 0.1988]
+  - [0.0312, 0.2025]
+  - [0.038, 0.207]
+  - [0.0442, 0.2124]
+  - [0.0496, 0.2185]
+  - [0.0541, 0.2253]
+  - [0.0577, 0.2327]
+  - [0.0604, 0.2404]
+  - [0.062, 0.2484]
+  - [0.0625, 0.2566]
+  - [0.062, 0.2647]
+  - [0.0604, 0.2728]
+  - [0.0577, 0.2805]
+  - [0.0541, 0.2878]
+  - [0.0496, 0.2946]
+  - [0.0442, 0.3008]
+  - [0.038, 0.3062]
+  - [0.0312, 0.3107]
+  - [0.0239, 0.3143]
+  - [0.0162, 0.317]
+  - [0.016, 0.329]
+  - [0.014, 0.337]
+  - [0, 0.337]
+  at: [-0.065, 0, 0]
+  color: '#8a8780'
+  finish: glass
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: &id036 [-0.065, 0.2266, 0.013]
+  to: &id001 [-0.0616, 0.2282, 0.0126]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id001
+  to: &id002 [-0.0585, 0.2299, 0.0113]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id002
+  to: &id003 [-0.0558, 0.2316, 0.0092]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id003
+  to: &id004 [-0.0537, 0.2332, 0.0065]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id004
+  to: &id005 [-0.0524, 0.2349, 0.0034]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id005
+  to: &id006 [-0.052, 0.2366, 0.0]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id006
+  to: &id007 [-0.0524, 0.2382, -0.0034]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id007
+  to: &id008 [-0.0537, 0.2399, -0.0065]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id008
+  to: &id009 [-0.0558, 0.2416, -0.0092]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id009
+  to: &id010 [-0.0585, 0.2432, -0.0113]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id010
+  to: &id011 [-0.0616, 0.2449, -0.0126]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id011
+  to: &id012 [-0.065, 0.2466, -0.013]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id012
+  to: &id013 [-0.0684, 0.2482, -0.0126]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id013
+  to: &id014 [-0.0715, 0.2499, -0.0113]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id014
+  to: &id015 [-0.0742, 0.2516, -0.0092]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id015
+  to: &id016 [-0.0763, 0.2532, -0.0065]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id016
+  to: &id017 [-0.0776, 0.2549, -0.0034]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id017
+  to: &id018 [-0.078, 0.2566, -0.0]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id018
+  to: &id019 [-0.0776, 0.2582, 0.0034]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id019
+  to: &id020 [-0.0763, 0.2599, 0.0065]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id020
+  to: &id021 [-0.0742, 0.2616, 0.0092]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id021
+  to: &id022 [-0.0715, 0.2632, 0.0113]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id022
+  to: &id023 [-0.0684, 0.2649, 0.0126]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id023
+  to: &id024 [-0.065, 0.2666, 0.013]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id024
+  to: &id025 [-0.0616, 0.2682, 0.0126]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id025
+  to: &id026 [-0.0585, 0.2699, 0.0113]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id026
+  to: &id027 [-0.0558, 0.2716, 0.0092]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id027
+  to: &id028 [-0.0537, 0.2732, 0.0065]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id028
+  to: &id029 [-0.0524, 0.2749, 0.0034]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id029
+  to: &id030 [-0.052, 0.2766, 0.0]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id030
+  to: &id031 [-0.0524, 0.2782, -0.0034]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id031
+  to: &id032 [-0.0537, 0.2799, -0.0065]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id032
+  to: &id033 [-0.0558, 0.2816, -0.0092]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id033
+  to: &id034 [-0.0585, 0.2832, -0.0113]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id034
+  to: &id035 [-0.0616, 0.2849, -0.0126]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Wendel
+  tag: glow 0.4
+  shape: rod
+  from: *id035
+  to: &id038 [-0.065, 0.2866, -0.013]
+  radius: 0.002
+  segments: 8
+  color: '#c08a45'
+  finish: matte
+- name: Draht
+  shape: rod
+  from: &id037 [-0.065, 0.331, 0]
+  to: *id036
+  radius: 0.0008
+  segments: 6
+  color: '#6b6660'
+  finish: metal
+- name: Draht
+  shape: rod
+  from: *id037
+  to: *id038
+  radius: 0.0008
+  segments: 6
+  color: '#6b6660'
+  finish: metal

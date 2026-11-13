@@ -3,7 +3,7 @@ import { MODEL_COLOR, modelOf } from '#/decoration/models.ts'
 import { useEased, useTravel } from '#/scene/decor/ease.ts'
 import { Glow, ownShadowless } from '#/scene/decor/LightModel.tsx'
 import { ShadeMaterial } from '#/scene/decor/lightMaterials.tsx'
-import { Material } from '#/scene/decor/parts.tsx'
+import { Glass, Material } from '#/scene/decor/parts.tsx'
 import { decodeShape, fetchGltf, partGeometry, shapeOf, type Shape } from '#/scene/decor/modelShape.ts'
 import type { ItemState } from '#/scene/decor/state.ts'
 import { shadowless, useLive } from '#/scene/live.ts'
@@ -103,6 +103,11 @@ function useDrawn(kindId: string): Drawn | null {
 
 type Vec3 = [number, number, number]
 const times = (a: Vec3, b: Vec3): Vec3 => [a[0] * b[0], a[1] * b[1], a[2] * b[2]]
+
+// How much a glass part of a model shows: a little more than a window, so a
+// bulb or a vase still reads as a shape and its color tints it like smoked
+// or colored glass.
+const GLASS_OPACITY = 0.3
 
 // One part that moves with the device. It is stretched with the rest of the
 // model first and then turned or moved whole round its pivot, so a hinged
@@ -211,11 +216,14 @@ export default function CustomModel({ kind, item, state }: Props) {
     const look = part.look?.type
     const shown = look === 'on' ? lit > 0.5 : look === 'off' ? lit <= 0.5 : true
     const shines = look === 'glow' || look === 'led'
+    // Glass is see through and throws no shadow, so a glowing filament
+    // inside a bulb shows and lights the room.
+    const clear = !shines && finish === 'glass'
     const mesh = (
       <mesh
         key={i}
         geometry={part.geometry}
-        castShadow={!shines}
+        castShadow={!shines && !clear}
         receiveShadow
         visible={shown}
         dispose={null}
@@ -224,6 +232,8 @@ export default function CustomModel({ kind, item, state }: Props) {
       >
         {shines ? (
           <ShadeMaterial color={color} material={finish} state={state} solid={look === 'led'} />
+        ) : clear ? (
+          <Glass color={color} opacity={GLASS_OPACITY} />
         ) : (
           <Material color={color} material={finish} />
         )}
