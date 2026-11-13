@@ -9,6 +9,8 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-13
+
 ### Added
 
 - Imported models can have glass parts: a part whose material is named glass, or is see through in the file, is drawn as clear tinted glass, so a glowing filament inside a bulb shows.
@@ -766,7 +768,8 @@ moves that section under the new version and uses it as the release notes.
 
 ### Changed
 
-[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.11.0...v1.12.0
