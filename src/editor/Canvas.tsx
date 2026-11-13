@@ -22,6 +22,8 @@ import { TraceFrame, TraceImage } from '#/editor/TraceLayer.tsx'
 import type { Selection, Tool } from '#/editor/types.ts'
 import { round, snap, toPlan, toScreen, zoomAt, type View } from '#/editor/view.ts'
 import { snapToWall } from '#/editor/walls.ts'
+import { holdsLocks, insertCorner, isLocked, removeCorner, withLock } from '#/editor/wallLength.ts'
+import WallLengthField, { WALL_FIELD_ATTR } from '#/editor/WallLengthField.tsx'
 import {
   freePlacement,
   furthestValid,
@@ -34,7 +36,7 @@ import { shortcut } from '#/lib/shortcuts.ts'
 import { cn } from '#/lib/utils.ts'
 import { EDITOR_BOUND_COLOR, EDITOR_SELECTED_COLOR } from '#/theme.ts'
 import type { DecorationConfig, DeviceConfig, Point, RoomConfig } from '#/types.ts'
-import type { IconDefinition } from '@fortawesome/free-solid-svg-icons'
+import { faLock, type IconDefinition } from '@fortawesome/free-solid-svg-icons'
 import { useEffect, useRef, useState } from 'react'
 import { useResizeObserver } from 'usehooks-ts'
 
@@ -113,6 +115,10 @@ const HANDLE = EDITOR_HANDLE_PX
 const EDGE_HIT_PX = 10
 // How far a press may wander and still be a click rather than a drag.
 const CLICK_PX = 4
+// How soon a second press on the same wall makes a double click, which
+// opens its length to be typed in. Told apart by hand, since the pointer is
+// captured by the canvas and a touch screen has no double click of its own.
+const DOUBLE_PRESS_MS = 400
 
 export default function Canvas({
   rooms,
@@ -204,6 +210,10 @@ export default function Canvas({
   // it, so the drag follows the pointer instead of sticking to the original.
   const duplicateSource = useRef<string | null>(null)
   const [menu, setMenu] = useState<{ at: ContextMenuPosition; target: Menu } | null>(null)
+  // The wall whose length is being typed in, and the last press on a wall,
+  // to tell a double press.
+  const [wallEdit, setWallEdit] = useState<{ roomId: string; index: number } | null>(null)
+  const lastEdgePress = useRef<{ roomId: string; index: number; time: number } | null>(null)
 
   // The view only changes on pan, zoom, fit or auto-pan. It is fitted when
   // unset, and again when the canvas changes shape while the view is still
@@ -329,15 +339,20 @@ export default function Canvas({
     // along the free axis and lands right against its neighbour on release.
     const patch = (roomId: string, candidates: Point[][]) => {
       const others = currentRooms.filter(r => r.id !== roomId && r.id !== duplicateSource.current).map(r => r.points)
-      const from = currentRooms.find(r => r.id === roomId)!.points
+      const room = currentRooms.find(r => r.id === roomId)!
+      const from = room.points
+      // A locked wall keeps its length, so a move that would change it is
+      // held back, the way one into another room is.
+      const holds = (target: Point[]) => holdsLocks(from, target, room.locked_walls)
       let resolved: Point[] = from
       for (const target of candidates) {
+        if (!holds(target)) continue
         if (isValidRoom(target, others)) {
           resolved = target
           break
         }
         const reached = furthestValid(from, target, others)
-        if (reached) {
+        if (reached && holds(reached)) {
           resolved = reached
           break
         }
@@ -603,6 +618,15 @@ export default function Canvas({
   const planPoint = (e: React.PointerEvent | React.MouseEvent) => toPlan(view, screenPoint(e))
 
   const selectedRoom = rooms.find(r => r.id === selection.roomId)
+  // The room whose wall is being typed in, while it is still the one picked.
+  const editedRoom =
+    wallEdit &&
+    tool === 'select' &&
+    !selectedDecoration &&
+    selectedRoom?.id === wallEdit.roomId &&
+    wallEdit.index < selectedRoom.points.length
+      ? selectedRoom
+      : null
   const roomPolygons = rooms.map(r => r.points)
 
   // A new corner may not land inside a room, and the segment from the last
@@ -619,6 +643,15 @@ export default function Canvas({
       rooms.map(r => (r.id === roomId ? { ...r, points } : r)),
       done,
     )
+  const replaceRoom = (room: RoomConfig) =>
+    onRooms(
+      rooms.map(r => (r.id === room.id ? room : r)),
+      true,
+    )
+  const setLock = (roomId: string, index: number, locked: boolean) => {
+    const room = rooms.find(r => r.id === roomId)
+    if (room) replaceRoom(withLock(room, index, locked))
+  }
 
   const capture = (e: React.PointerEvent) => {
     svgRef.current!.setPointerCapture(e.pointerId)
@@ -749,6 +782,16 @@ export default function Canvas({
     }
     if (e.button !== 0) return
     e.stopPropagation()
+    const now = e.timeStamp
+    const last = lastEdgePress.current
+    if (last && last.roomId === room.id && last.index === index && now - last.time < DOUBLE_PRESS_MS) {
+      lastEdgePress.current = null
+      // No mouse down after it, which would take the focus from the field.
+      e.preventDefault()
+      setWallEdit({ roomId: room.id, index })
+      return
+    }
+    lastEdgePress.current = { roomId: room.id, index, time: now }
     capture(e)
     onSelect({ roomId: room.id, vertex: null })
     liveRooms.current = rooms
@@ -904,11 +947,7 @@ export default function Canvas({
   const deleteVertex = (roomId: string, index: number) => {
     const room = rooms.find(r => r.id === roomId)
     if (!room || !canDeleteVertex(roomId, index)) return
-    updateRoom(
-      roomId,
-      room.points.filter((_, i) => i !== index),
-      true,
-    )
+    replaceRoom(removeCorner(room, index))
     onSelect({ roomId, vertex: null })
   }
 
@@ -916,7 +955,7 @@ export default function Canvas({
     const room = rooms.find(r => r.id === roomId)
     if (!room) return
     const p = snap(point, view, [...rooms, ...ghosts], undefined, [], grid()).map(round) as Point
-    updateRoom(roomId, [...room.points.slice(0, index + 1), p, ...room.points.slice(index + 1)], true)
+    replaceRoom(insertCorner(room, index, p))
     onSelect({ roomId, vertex: index + 1 })
   }
 
@@ -953,17 +992,39 @@ export default function Canvas({
           </ContextMenuItem>
         )
       }
-      case 'edge':
+      case 'edge': {
+        const room = rooms.find(r => r.id === t.roomId)
+        const locked = !!room && isLocked(room, t.index)
         return (
-          <ContextMenuItem
-            onSelect={() => {
-              insertVertex(t.roomId, t.index, t.point)
-              closeMenu()
-            }}
-          >
-            Add corner here
-          </ContextMenuItem>
+          <>
+            <ContextMenuItem
+              onSelect={() => {
+                setWallEdit({ roomId: t.roomId, index: t.index })
+                closeMenu()
+              }}
+            >
+              Set length…
+            </ContextMenuItem>
+            <ContextMenuItem
+              onSelect={() => {
+                setLock(t.roomId, t.index, !locked)
+                closeMenu()
+              }}
+            >
+              {locked ? 'Unlock length' : 'Lock length'}
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onSelect={() => {
+                insertVertex(t.roomId, t.index, t.point)
+                closeMenu()
+              }}
+            >
+              Add corner here
+            </ContextMenuItem>
+          </>
         )
+      }
       case 'room': {
         const room = rooms.find(r => r.id === t.roomId)
         return (
@@ -1108,6 +1169,10 @@ export default function Canvas({
         )}
         style={{ ...style, cursor }}
         onPointerDown={onPointerDown}
+        onPointerDownCapture={e => {
+          // A press anywhere beside the length being typed in lets go of it.
+          if (wallEdit && !(e.target as Element).closest(`[${WALL_FIELD_ATTR}]`)) setWallEdit(null)
+        }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={() => {
@@ -1209,6 +1274,32 @@ export default function Canvas({
             />
           )
         })}
+
+        {/* Locked walls, drawn heavier over the outline, so they read as
+            fixed on every room and not only on the one selected. */}
+        {rooms.flatMap(room =>
+          (room.locked_walls ?? [])
+            .filter(i => i < room.points.length)
+            .map(i => {
+              const [ax, ay] = toScreen(view, room.points[i])
+              const [bx, by] = toScreen(view, room.points[(i + 1) % room.points.length])
+              const picked = selection.roomId === room.id
+              return (
+                <line
+                  key={`lock-${room.id}-${i}`}
+                  x1={ax}
+                  y1={ay}
+                  x2={bx}
+                  y2={by}
+                  stroke={picked ? EDITOR_SELECTED_COLOR : 'var(--primary-text-color)'}
+                  strokeOpacity={picked ? 1 : 0.7}
+                  strokeWidth={3.5}
+                  strokeLinecap="round"
+                  className="pointer-events-none"
+                />
+              )
+            }),
+        )}
 
         {[...decorations]
           .sort((a, b) => {
@@ -1391,35 +1482,57 @@ export default function Canvas({
                 />
               )
             })}
-            {showLengths &&
-              selectedRoom.points.map((p, i) => {
-                const q = selectedRoom.points[(i + 1) % selectedRoom.points.length]
-                const length = Math.hypot(q[0] - p[0], q[1] - p[1])
-                const [mx, my] = toScreen(view, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2])
-                const label = `${length.toFixed(2)} m`
-                const w = label.length * 7 + 12
-                return (
-                  <g key={`l${i}`} className="pointer-events-none">
-                    <rect
-                      x={mx - w / 2}
-                      y={my - 10}
-                      width={w}
-                      height={20}
-                      rx={10}
-                      fill="var(--card-background-color)"
-                      filter="url(#dio-lift)"
-                    />
-                    <text
-                      x={mx}
-                      y={my + 4}
-                      textAnchor="middle"
-                      className="font-system fill-(--primary-text-color) text-[11px] font-semibold tabular-nums"
-                    >
-                      {label}
-                    </text>
-                  </g>
-                )
-              })}
+            {selectedRoom.points.map((p, i) => {
+              // A locked wall always shows its length, with the lock before it.
+              const locked = isLocked(selectedRoom, i)
+              if (!showLengths && !locked) return null
+              if (wallEdit?.roomId === selectedRoom.id && wallEdit.index === i) return null
+              const q = selectedRoom.points[(i + 1) % selectedRoom.points.length]
+              const length = Math.hypot(q[0] - p[0], q[1] - p[1])
+              const [mx, my] = toScreen(view, [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2])
+              const label = `${length.toFixed(2)} m`
+              const lock = locked ? 14 : 0
+              const w = label.length * 7 + 12 + lock
+              return (
+                // Pressed twice, like the wall, it opens the length to be typed in.
+                <g
+                  key={`l${i}`}
+                  style={{ cursor: edgeCursor(p, q) }}
+                  onPointerDown={e => onEdgeDown(e, selectedRoom, i)}
+                  onContextMenu={e =>
+                    openMenu(e, {
+                      kind: 'edge',
+                      roomId: selectedRoom.id,
+                      index: i,
+                      point: [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2],
+                    })
+                  }
+                >
+                  <rect
+                    x={mx - w / 2}
+                    y={my - 10}
+                    width={w}
+                    height={20}
+                    rx={10}
+                    fill="var(--card-background-color)"
+                    stroke={locked ? EDITOR_SELECTED_COLOR : 'none'}
+                    strokeWidth={1.5}
+                    filter="url(#dio-lift)"
+                  />
+                  {locked && (
+                    <IconGlyph icon={faLock} x={mx - w / 2 + 13} y={my} size={9} fill={EDITOR_SELECTED_COLOR} />
+                  )}
+                  <text
+                    x={mx + lock / 2}
+                    y={my + 4}
+                    textAnchor="middle"
+                    className="font-system pointer-events-none fill-(--primary-text-color) text-[11px] font-semibold tabular-nums"
+                  >
+                    {label}
+                  </text>
+                </g>
+              )
+            })}
             {selectedRoom.points.map((p, i) => {
               const [sx, sy] = toScreen(view, p)
               return (
@@ -1439,6 +1552,19 @@ export default function Canvas({
               )
             })}
           </>
+        )}
+
+        {editedRoom && wallEdit && (
+          <WallLengthField
+            key={`${wallEdit.roomId}:${wallEdit.index}`}
+            room={editedRoom}
+            index={wallEdit.index}
+            view={view}
+            others={rooms.filter(r => r.id !== editedRoom.id).map(r => r.points)}
+            onApply={points => updateRoom(editedRoom.id, points, true)}
+            onLock={locked => setLock(editedRoom.id, wallEdit.index, locked)}
+            onClose={() => setWallEdit(null)}
+          />
         )}
 
         {trace && traceSelected && <TraceFrame trace={trace} view={view} onCornerDown={onTraceCornerDown} />}

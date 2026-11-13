@@ -97,6 +97,9 @@ export type RoomConfig = {
   // the card does not have, is on the floor the card opens on.
   floor_id?: string
   points: Point[]
+  // Walls whose length the editor keeps while the plan is dragged, by
+  // index: wall i runs from point i to the next one.
+  locked_walls?: number[]
   radius?: number
   color?: string
   // How far the floor stands above the rest of the home, or below it when
