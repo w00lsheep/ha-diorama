@@ -9,6 +9,8 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-13
+
 ### Added
 
 - The editor's plan, 3D view and sidebar can be arranged freely: press Arrange in the toolbar and drag each one beside another or along an edge, and every device keeps its own layout.
@@ -760,7 +762,8 @@ moves that section under the new version and uses it as the release notes.
 
 ### Changed
 
-[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.10.0...v1.11.0
