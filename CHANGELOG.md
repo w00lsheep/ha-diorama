@@ -9,6 +9,8 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-13
+
 ### Added
 
 - A double click or double tap on a wall in the editor lets you type its length to the centimeter, and lock it so that dragging the plan around it leaves its length as it is.
@@ -748,7 +750,8 @@ moves that section under the new version and uses it as the release notes.
 
 ### Changed
 
-[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.8.29...v1.9.0
