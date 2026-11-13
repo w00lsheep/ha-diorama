@@ -9,6 +9,8 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-13
+
 ### Added
 
 - Imported models can be stood on: a part named with the `[top]` tag, such as `Board [top]`, takes lamps and other pieces on its upper face like a table does, and a model with several, like a shelf unit, lets a piece step from board to board under Standing on.
@@ -742,7 +744,8 @@ moves that section under the new version and uses it as the release notes.
 
 ### Changed
 
-[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.8.29...v1.9.0
 [1.8.29]: https://github.com/CarlesRojas/ha-diorama/compare/v1.8.28...v1.8.29
