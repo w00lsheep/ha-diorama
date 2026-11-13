@@ -6,6 +6,8 @@ import Overlay from '#/editor/Overlay.tsx'
 import RoomInfo from '#/editor/RoomInfo.tsx'
 import { field, plainButton } from '#/editor/look.ts'
 import Toolbar from '#/editor/Toolbar.tsx'
+import Panes, { ArrangeButtons } from '#/editor/Panes.tsx'
+import { useLayout } from '#/editor/layout.ts'
 import FloorPicker from '#/editor/FloorPicker.tsx'
 import {
   floorOf,
@@ -55,16 +57,7 @@ import {
   type IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import {
-  EDITOR_DEVICE_GRID_M,
-  EDITOR_GRID_M,
-  EDITOR_PREVIEW_FRACTION,
-  EDITOR_PREVIEW_MIN_PX,
-  EDITOR_SIDEBAR_MIN_PX,
-  EDITOR_HOUR,
-  EDITOR_NIGHT_HOUR,
-  EDITOR_SIDEBAR_WIDTH_PX,
-} from '#/constants.ts'
+import { EDITOR_DEVICE_GRID_M, EDITOR_GRID_M, EDITOR_HOUR, EDITOR_NIGHT_HOUR } from '#/constants.ts'
 import type {
   CameraView,
   FloorConfig,
@@ -315,12 +308,10 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
     const room = rooms.find(r => r.id === roomId)
     if (room && camera.current) camera.current.flyTo(room.camera ?? camera.current.frame(room))
   }
-  const [sidebarWidth, setSidebarWidth] = useState(EDITOR_SIDEBAR_WIDTH_PX)
-  const sidebarDrag = useRef<{ startX: number; width: number } | null>(null)
-  // Share of the column under the toolbar that the 3D preview takes.
-  const [previewShare, setPreviewShare] = useState(EDITOR_PREVIEW_FRACTION)
-  const previewDrag = useRef<{ startY: number; share: number; height: number } | null>(null)
-  const plan = useRef<HTMLDivElement>(null)
+  // Where the plan, the 3D view and the sidebar stand, kept on the device,
+  // and whether they are being dragged somewhere else.
+  const [layout, setLayout] = useLayout()
+  const [arranging, setArranging] = useState(false)
   // Rooms as they were when the fullscreen editor opened, for Discard.
   const [opened, setOpened] = useState<{
     rooms: RoomConfig[]
@@ -1211,6 +1202,10 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
       case 'P':
         togglePreview()
         break
+      case 'a':
+      case 'A':
+        setArranging(!arranging)
+        break
       case 'n':
       case 'N':
         flipHour()
@@ -1331,6 +1326,13 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
         }}
         onPickTrace={pickTrace}
       />
+      <span className="bg-separator h-4 w-px" />
+      <ArrangeButtons
+        arranging={arranging}
+        onArrange={() => setArranging(!arranging)}
+        custom={layout !== null}
+        onReset={() => setLayout(null)}
+      />
     </div>
   )
 
@@ -1432,133 +1434,84 @@ export default function Editor({ hass, config, onChange, onSave }: Props) {
               </button>
             </div>
           </div>
-          <div className="flex min-h-0 flex-1 gap-1">
-            <div ref={plan} className="flex min-w-0 flex-1 flex-col">
-              <div className="flex min-h-0" style={{ flex: showPreview ? 1 - previewShare : 1 }}>
-                {canvas}
-              </div>
-              {showPreview && (
-                <>
-                  {/* Drag to share the column between the plan and the view. */}
-                  <div
-                    className="group flex h-4 shrink-0 cursor-row-resize touch-none items-center justify-center"
-                    onPointerDown={e => {
-                      if (e.button !== 0) return
-                      e.currentTarget.setPointerCapture(e.pointerId)
-                      previewDrag.current = {
-                        startY: e.clientY,
-                        share: previewShare,
-                        height: plan.current?.clientHeight ?? window.innerHeight,
+          <Panes
+            layout={layout}
+            onLayout={setLayout}
+            arranging={arranging}
+            panes={{
+              plan: <div className="flex min-h-0 min-w-0 flex-1">{canvas}</div>,
+              view: showPreview && (
+                <div
+                  className="ring-separator relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-2xl ring-1"
+                  style={{ background: SCENE_BACKGROUND_CSS }}
+                >
+                  {/* The view the card opens with: saved from where the
+                      camera stands, flown back to, or forgotten. Named
+                      buttons in the corner, over the view. */}
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+                    <PreviewButton
+                      icon={faXmark}
+                      label="Forget view"
+                      title="Forget the saved view and go back to the one the card comes with, the whole plan framed"
+                      disabled={!openingView}
+                      onClick={clearMainView}
+                    />
+                    <PreviewButton
+                      icon={faEye}
+                      label="Fly to view"
+                      title="Fly the camera to the view the card opens with"
+                      onClick={showMainView}
+                    />
+                    <PreviewButton
+                      icon={mainViewSaved ? faCheck : faCamera}
+                      label={mainViewSaved ? 'View saved' : openingView ? 'Replace opening view' : 'Save opening view'}
+                      title={
+                        openingView
+                          ? 'Replace the view the card opens with by where the camera stands now'
+                          : 'Open the card with the view the camera has now'
                       }
-                    }}
-                    onPointerMove={e => {
-                      const d = previewDrag.current
-                      if (!d || d.height <= 0) return
-                      const next = d.share - (e.clientY - d.startY) / d.height
-                      const min = EDITOR_PREVIEW_MIN_PX / d.height
-                      setPreviewShare(Math.min(Math.max(next, min), 1 - min))
-                    }}
-                    onPointerUp={e => {
-                      previewDrag.current = null
-                      e.currentTarget.releasePointerCapture(e.pointerId)
-                    }}
-                  >
-                    <span className="bg-fill-stronger group-hover:bg-label-2 h-[5px] w-10 rounded-full transition-colors" />
-                  </div>
-                  <div
-                    className="ring-separator relative min-h-0 overflow-hidden rounded-2xl ring-1"
-                    style={{ flex: previewShare, background: SCENE_BACKGROUND_CSS }}
-                  >
-                    {/* The view the card opens with: saved from where the
-                        camera stands, flown back to, or forgotten. Named
-                        buttons in the corner, over the view. */}
-                    <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-                      <PreviewButton
-                        icon={faXmark}
-                        label="Forget view"
-                        title="Forget the saved view and go back to the one the card comes with, the whole plan framed"
-                        disabled={!openingView}
-                        onClick={clearMainView}
-                      />
-                      <PreviewButton
-                        icon={faEye}
-                        label="Fly to view"
-                        title="Fly the camera to the view the card opens with"
-                        onClick={showMainView}
-                      />
-                      <PreviewButton
-                        icon={mainViewSaved ? faCheck : faCamera}
-                        label={
-                          mainViewSaved ? 'View saved' : openingView ? 'Replace opening view' : 'Save opening view'
-                        }
-                        title={
-                          openingView
-                            ? 'Replace the view the card opens with by where the camera stands now'
-                            : 'Open the card with the view the camera has now'
-                        }
-                        done={mainViewSaved}
-                        onClick={saveMainView}
-                      />
-                    </div>
-                    <Scene
-                      hass={home ?? hass}
-                      config={floorView({ ...config, rooms, devices, decorations, floors }, activeFloor)}
-                      floor={activeFloor}
-                      sky={hour}
-                      wheelZoom
-                      onPickDecoration={pickDecoration}
-                      cameraRef={camera}
-                      tries={tries}
-                      onTry={stepTry}
-                      onPickRoom={id => pickRoom({ roomId: id, vertex: null })}
-                      selected={
-                        selectedDecoration
-                          ? `decoration:${selectedDecoration}`
-                          : selection.roomId
-                            ? `room:${selection.roomId}`
-                            : null
-                      }
-                      onPickNothing={() => {
-                        setSelection({ roomId: null, vertex: null })
-                        setSelectedDecoration(null)
-                      }}
+                      done={mainViewSaved}
+                      onClick={saveMainView}
                     />
                   </div>
-                </>
-              )}
-            </div>
-            {/* Drag to resize the sidebar, between a minimum and half the window. */}
-            <div
-              className="group flex w-4 shrink-0 cursor-col-resize touch-none items-center justify-center"
-              onPointerDown={e => {
-                if (e.button !== 0) return
-                e.currentTarget.setPointerCapture(e.pointerId)
-                sidebarDrag.current = { startX: e.clientX, width: sidebarWidth }
-              }}
-              onPointerMove={e => {
-                const d = sidebarDrag.current
-                if (!d) return
-                const next = d.width - (e.clientX - d.startX)
-                setSidebarWidth(Math.min(Math.max(next, EDITOR_SIDEBAR_MIN_PX), window.innerWidth / 2))
-              }}
-              onPointerUp={e => {
-                sidebarDrag.current = null
-                e.currentTarget.releasePointerCapture(e.pointerId)
-              }}
-            >
-              <span className="bg-fill-stronger group-hover:bg-label-2 h-10 w-[5px] rounded-full transition-colors" />
-            </div>
-            <div
-              ref={sidebar}
-              onScroll={e => {
-                if (catalogShown) catalogScroll.current = e.currentTarget.scrollTop
-              }}
-              className="flex shrink-0 flex-col gap-3 overflow-y-auto pr-1 pl-1"
-              style={{ width: sidebarWidth }}
-            >
-              {roomInfo ?? panels}
-            </div>
-          </div>
+                  <Scene
+                    hass={home ?? hass}
+                    config={floorView({ ...config, rooms, devices, decorations, floors }, activeFloor)}
+                    floor={activeFloor}
+                    sky={hour}
+                    wheelZoom
+                    onPickDecoration={pickDecoration}
+                    cameraRef={camera}
+                    tries={tries}
+                    onTry={stepTry}
+                    onPickRoom={id => pickRoom({ roomId: id, vertex: null })}
+                    selected={
+                      selectedDecoration
+                        ? `decoration:${selectedDecoration}`
+                        : selection.roomId
+                          ? `room:${selection.roomId}`
+                          : null
+                    }
+                    onPickNothing={() => {
+                      setSelection({ roomId: null, vertex: null })
+                      setSelectedDecoration(null)
+                    }}
+                  />
+                </div>
+              ),
+              side: (
+                <div
+                  ref={sidebar}
+                  onScroll={e => {
+                    if (catalogShown) catalogScroll.current = e.currentTarget.scrollTop
+                  }}
+                  className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 pl-1"
+                >
+                  {roomInfo ?? panels}
+                </div>
+              ),
+            }}
+          />
           {/* Deleting a floor with rooms on it takes a lot that cannot be
             brought back, so it is asked in red, and only goes once the
             floor's name is typed in. */}

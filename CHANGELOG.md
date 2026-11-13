@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- The editor's plan, 3D view and sidebar can be arranged freely: press Arrange in the toolbar and drag each one beside another or along an edge, and every device keeps its own layout.
+
 ## [1.13.0] - 2026-11-13
 
 ### Added

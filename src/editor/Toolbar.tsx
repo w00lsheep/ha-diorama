@@ -343,7 +343,7 @@ function Dial({
 
 // A toggle shows its state through the icon color on a faint tint, a tool
 // as the raised segment of the control the tools sit in.
-function ToolButton({
+export function ToolButton({
   action,
   active,
   color,

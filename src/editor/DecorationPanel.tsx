@@ -174,7 +174,7 @@ export default function DecorationPanel({
       return Math.min(Math.max(from + dy, 120), 520)
     })
   const previewShape = {
-    className: cn('bg-fill w-full overflow-hidden rounded-2xl', !previewHeight && 'aspect-square'),
+    className: cn('bg-fill w-full overflow-hidden rounded-2xl', !previewHeight && 'aspect-square max-h-80'),
     style: previewHeight ? { height: previewHeight } : undefined,
   }
   // The item a trash icon in the device's list was clicked on, waiting for
