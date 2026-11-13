@@ -1,0 +1,22 @@
+# Hornbach Akustikpaneel Eiche natur furniert (Art. 12021858), Original 2600 x 560 x 18 mm,
+# hier auf genau 600 mm Breite gebracht. Lamellen 1-seitig, auf schwarzem Filz geklammert.
+# Lamellenmaße nicht angegeben: angenommen 14 Lamellen 27 mm breit, 12 mm tief, Raster 44 mm, Filz 6 mm.
+# Reine Deko an der Wand, keine Entity.
+name: Akustikpaneel Eiche 60
+file: hornbach_akustikpaneel_eiche_60
+mount: wall
+segments: 16
+parts:
+  - name: Filz
+    shape: box
+    size: [0.60, 2.60, 0.006]
+    at: [0, 0, 0.003]
+    color: "#262628"
+    finish: fabric
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.022, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.066, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.110, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.154, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.198, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.242, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
+  - {name: Lamelle, shape: box, size: [0.027, 2.60, 0.012], at: [0.2865, 0, 0.012], color: "#b48a5f", finish: wood, mirror: x}
