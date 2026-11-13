@@ -128,14 +128,24 @@ type Piece = {
   finish?: string
 }
 
-const FINISHES = new Set(['matte', 'fabric', 'wood', 'ceramic', 'metal'])
+const FINISHES = new Set(['matte', 'fabric', 'wood', 'ceramic', 'metal', 'glass'])
 
 // The paint a material in the file stands for: its color, and a finish by
-// its name when that is one of the card's, or else by how metallic and how
-// rough it is. A mesh with no material of its own says nothing.
+// its name when that is one of the card's, or else glass for a see through
+// material, or else by how metallic and how rough it is. A mesh with no
+// material of its own says nothing.
 function paintOf(gltf: GLTF, material: Mesh['material'] | undefined): { color?: string; finish?: string } {
   const m = (Array.isArray(material) ? material[0] : material) as
-    { name?: string; color?: { getHexString: () => string }; metalness?: number; roughness?: number } | undefined
+    | {
+        name?: string
+        color?: { getHexString: () => string }
+        metalness?: number
+        roughness?: number
+        transparent?: boolean
+        opacity?: number
+        transmission?: number
+      }
+    | undefined
   // The loader paints a mesh with no material in a plain white of its own,
   // with no name. A material it had to copy, for a mesh without normals,
   // keeps the name but not the link back to the file.
@@ -144,7 +154,10 @@ function paintOf(gltf: GLTF, material: Mesh['material'] | undefined): { color?: 
     .toLowerCase()
     .split(/[^a-z]+/)
     .find(w => FINISHES.has(w))
-  const finish = named ?? ((m.metalness ?? 0) > 0.5 ? 'metal' : (m.roughness ?? 1) < 0.35 ? 'ceramic' : 'matte')
+  const clear = (m.transmission ?? 0) > 0.5 || (!!m.transparent && (m.opacity ?? 1) < 0.9)
+  const finish =
+    named ??
+    (clear ? 'glass' : (m.metalness ?? 0) > 0.5 ? 'metal' : (m.roughness ?? 1) < 0.35 ? 'ceramic' : 'matte')
   return { ...(m.color && { color: `#${m.color.getHexString()}` }), finish }
 }
 

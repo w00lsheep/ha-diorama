@@ -40,7 +40,8 @@ MAX_TRIANGLES = 60000
 WARN_TRIANGLES = 20000
 MAX_PARTS = 16
 MAX_TOPS = 12
-FINISHES = {"matte", "fabric", "wood", "ceramic", "metal"}
+FINISHES = {"matte", "fabric", "wood", "ceramic", "metal", "glass"}
+GLASS_ALPHA = 0.3  # what the card draws a glass part with
 LOOKS = {"glow", "led", "on", "off"}
 MOTIONS = {"hinge", "slide", "spin"}
 DEFAULT_COLOR = "#e8e1d5"  # Diorama's linen
@@ -577,17 +578,21 @@ def write_glb(nodes, path: Path, model_name: str):
         key = (m.color, m.finish, m.label)
         if key not in materials:
             metal = 1.0 if m.finish == "metal" else 0.0
-            rough = {"metal": 0.35, "ceramic": 0.25, "wood": 0.7, "fabric": 0.95, "matte": 0.85}[m.finish]
-            gltf["materials"].append(
-                {
-                    "name": f"{m.finish} {m.label}",
-                    "pbrMetallicRoughness": {
-                        "baseColorFactor": hex_to_linear(m.color) + [1.0],
-                        "metallicFactor": metal,
-                        "roughnessFactor": rough,
-                    },
-                }
-            )
+            rough = {"metal": 0.35, "ceramic": 0.25, "wood": 0.7, "fabric": 0.95, "matte": 0.85, "glass": 0.05}[m.finish]
+            glass = m.finish == "glass"
+            mat = {
+                "name": f"{m.finish} {m.label}",
+                "pbrMetallicRoughness": {
+                    "baseColorFactor": hex_to_linear(m.color) + [GLASS_ALPHA if glass else 1.0],
+                    "metallicFactor": metal,
+                    "roughnessFactor": rough,
+                },
+            }
+            if glass:
+                # See through in any viewer, and the card reads it as glass.
+                mat["alphaMode"] = "BLEND"
+                mat["doubleSided"] = True
+            gltf["materials"].append(mat)
             materials[key] = len(gltf["materials"]) - 1
         return materials[key]
 
@@ -816,6 +821,9 @@ def render_preview(nodes, path: Path, title: str, states):
                     base = np.array([1.0, 0.86, 0.6])
                     shade = np.ones_like(shade)
                 col = np.clip(base[None, :] * shade[:, None], 0, 1)
+                # Glass is drawn see through, so what is inside it shows.
+                alpha = GLASS_ALPHA if m.finish == "glass" and not (lk in ("glow", "led") and on) else 1.0
+                col = np.hstack([col, np.full((len(col), 1), alpha)])
                 # matplotlib is z-up and right handed: plot (x, y, z) = model (x, -z, y).
                 plot = tri[:, :, [0, 2, 1]].copy()
                 plot[:, :, 1] *= -1

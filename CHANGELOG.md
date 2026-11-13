@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- Imported models can have glass parts: a part whose material is named glass, or is see through in the file, is drawn as clear tinted glass, so a glowing filament inside a bulb shows.
+
 ## [1.14.0] - 2026-11-13
 
 ### Added
