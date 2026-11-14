@@ -19,6 +19,8 @@ import type { DecorationConfig } from '#/types.ts'
 
 import { useEased } from '#/scene/decor/ease.ts'
 import { useWarmed } from '#/scene/warm.ts'
+import { lean, useDevSettings } from '#/lib/devSettings.ts'
+import LeanGlow from '#/scene/decor/LeanGlow.tsx'
 import { useLayoutEffect, useRef } from 'react'
 import type { BufferGeometry, Camera, Group, Mesh, PointLight, RectAreaLight } from 'three'
 import type { ItemState } from '#/scene/decor/state.ts'
@@ -77,6 +79,7 @@ export function Glow({
   // last word, see `balance`. It is only ever switched on here: switching
   // it off while the lamp is lit would change the count of shadows behind
   // the back of what hands them out.
+  const leaner = lean(useDevSettings())
   const strip = useRef<RectAreaLight>(null)
   const bulb = useRef<PointLight>(null)
   const through = useRef<PointLight>(null)
@@ -88,6 +91,11 @@ export function Glow({
     for (const light of [strip.current, bulb.current, through.current]) if (light) light.visible = on
     if (on && bulb.current && latestRank.current > 0) bulb.current.castShadow = true
   })
+  // Performance mode lights each lamp with a single point, see LeanGlow.
+  if (leaner)
+    return (
+      <LeanGlow ref={bulb} at={at} color={[r, g, b]} total={total} rank={rank} shown={shown} strip={spread > 0.4} />
+    )
   // A strip is a line of light, not a point. A rect area light is one
   // continuous source, so the wash along a long strip is even instead of
   // beading wherever a point happens to sit.
