@@ -40,7 +40,7 @@ MAX_TRIANGLES = 60000
 WARN_TRIANGLES = 20000
 MAX_PARTS = 16
 MAX_TOPS = 12
-FINISHES = {"matte", "fabric", "wood", "ceramic", "metal", "glass"}
+FINISHES = {"matte", "fabric", "carpet", "wood", "ceramic", "metal", "glass"}
 GLASS_ALPHA = 0.3  # what the card draws a glass part with
 LOOKS = {"glow", "led", "on", "off"}
 MOTIONS = {"hinge", "slide", "spin"}
@@ -578,7 +578,7 @@ def write_glb(nodes, path: Path, model_name: str):
         key = (m.color, m.finish, m.label)
         if key not in materials:
             metal = 1.0 if m.finish == "metal" else 0.0
-            rough = {"metal": 0.35, "ceramic": 0.25, "wood": 0.7, "fabric": 0.95, "matte": 0.85, "glass": 0.05}[m.finish]
+            rough = {"metal": 0.35, "ceramic": 0.25, "wood": 0.7, "fabric": 0.95, "carpet": 1.0, "matte": 0.85, "glass": 0.05}[m.finish]
             glass = m.finish == "glass"
             mat = {
                 "name": f"{m.finish} {m.label}",

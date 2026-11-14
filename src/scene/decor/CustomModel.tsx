@@ -236,8 +236,8 @@ export default function CustomModel({ kind, item, state }: Props) {
           <ShadeMaterial color={color} material={finish} state={state} solid={look === 'led'} />
         ) : clear ? (
           <Glass color={color} opacity={GLASS_OPACITY} />
-        ) : finish === 'wood' ? (
-          <SurfaceMaterial kind="wood" color={color} />
+        ) : finish === 'wood' || finish === 'carpet' ? (
+          <SurfaceMaterial kind={finish} color={color} />
         ) : (
           <Material color={color} material={finish} />
         )}

@@ -1,8 +1,8 @@
 import { BufferAttribute, type BufferGeometry } from 'three'
 
-// Wood grain on an imported model. A part painted with the wood finish wears
-// the card's own procedural oak, the one furniture floors use, so it gets
-// coordinates for it here: each face is projected onto the side of the
+// Patterns on an imported model. A part painted with the wood finish wears
+// the card's own procedural oak, and one with the carpet finish the soft pile
+// of the card's carpet floors, so it gets coordinates for them here: each face is projected onto the side of the
 // part's box it faces most, in meters, so the grain keeps one physical scale
 // however large the part is. The grain runs along the part's longest side,
 // as it does on a board, a slat or a table top.
