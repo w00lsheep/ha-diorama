@@ -15,9 +15,9 @@
 // and height, to see that a hinge stays a hinge on a stretched model, and
 // `ride=1` stands a table lamp on every top of a model that has any, to see
 // that each one is where its part is. `mount=wall` hangs every model on the
-// back wall.
+// back wall. `opts=Stand=0,Cover=1` sets the switches of a model's options.
 import { modelPreferredDomains } from '#/decoration/modelTags.ts'
-import { encodeShape, fetchGltf, shapeOf } from '#/scene/decor/modelShape.ts'
+import { encodeShape, fetchGltf, shapeOf, shapeExtras } from '#/scene/decor/modelShape.ts'
 import type { CardConfig, EntityState, HomeAssistant, ModelConfig } from '#/types.ts'
 
 await import('#/main.tsx')
@@ -35,6 +35,15 @@ for (const [name, value] of Object.entries(dark)) document.documentElement.style
 document.body.style.background = 'linear-gradient(160deg,#2b2f3a,#151821 60%,#0e0f14) fixed'
 
 const files = (params.get('glb') ?? '').split(',').filter(Boolean)
+const options = Object.fromEntries(
+  (params.get('opts') ?? '')
+    .split(',')
+    .filter(Boolean)
+    .map(pair => {
+      const [name, value] = pair.split('=')
+      return [`opt:${name}`, value === '0' ? 0 : 1]
+    }),
+)
 const on = params.get('on') === '1'
 const level = Math.min(Math.max(Number(params.get('level') ?? 1), 0), 1)
 const now = new Date().toISOString()
@@ -59,7 +68,7 @@ for (const [i, url] of files.entries()) {
     size: shape.size,
     triangles: shape.triangles,
     parts: encodeShape(shape),
-    ...(shape.tops.length > 0 && { tops: shape.tops }),
+    ...shapeExtras(shape),
     ...(params.get('mount') === 'wall' && { mount: 'wall' }),
   }
   const hung = models[id].mount === 'wall'
@@ -90,7 +99,12 @@ for (const [i, url] of files.entries()) {
     room: 'room',
     position: [x, y],
     rotation: 0,
-    ...(params.has('stretch') && { params: { width: sw, depth: sd, height: sh } }),
+    ...((params.has('stretch') || params.has('opts')) && {
+      params: {
+        ...(params.has('stretch') && { width: sw, depth: sd, height: sh }),
+        ...options,
+      },
+    }),
   })
   config.devices!.push({ entity_id: entity, room: 'room', position: [x, y], decorations: [`piece_${id}`] })
   // A lamp on each top, side by side, the highest top's naming no level.

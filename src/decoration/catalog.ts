@@ -7,6 +7,7 @@ import {
   sofaArmWidth,
   sofaSeatRange,
 } from '#/scene/decor/sofaSpecs.ts'
+import { optionShift, optionShown } from '#/decoration/modelOptions.ts'
 import { isModelKind, modelDomains, modelKind, modelOf, modelTops } from '#/decoration/models.ts'
 import type { Signal } from '#/signals.ts'
 import { CEILING_HEIGHT_M, LIGHT_BASE_COLOR, LIGHT_SHADE_COLOR, SCANDI, SCREEN_OFF_COLOR } from '#/theme.ts'
@@ -3815,12 +3816,17 @@ export function surfaceTops(kind: DecorationKind, params: Record<string, number>
   const sx = scale('width', model.size[0])
   const sz = scale('depth', model.size[1])
   const sy = scale('height', model.size[2])
+  // The tops of options the piece leaves out are not there, and the rest
+  // move with the model as it comes to rest on what it has left.
+  const [, dy, dz] = optionShift(model, params)
   // The model's z runs toward its front, which is down its y on the plan.
-  return modelTops(kind.id).map(top => ({
-    height: top.y * sy,
-    x: top.x * sx,
-    y: -top.z * sz - out,
-    w: Math.max(top.w * sx - 0.1, top.w * sx * 0.4),
-    d: Math.max(top.d * sz - 0.1, top.d * sz * 0.4),
-  }))
+  return modelTops(kind.id)
+    .filter(top => optionShown(model, top.option, params))
+    .map(top => ({
+      height: (top.y + dy) * sy,
+      x: top.x * sx,
+      y: -(top.z + dz) * sz - out,
+      w: Math.max(top.w * sx - 0.1, top.w * sx * 0.4),
+      d: Math.max(top.d * sz - 0.1, top.d * sz * 0.4),
+    }))
 }

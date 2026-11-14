@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- Imported models can have parts a piece keeps or leaves out, like a monitor's stand or a speaker's cover: each shows as a switch in the item panel, and a model without its stand rests on what is left of it.
+
 ## [1.17.0] - 2026-11-14
 
 ### Added

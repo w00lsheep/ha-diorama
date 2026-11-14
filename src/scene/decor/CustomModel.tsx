@@ -1,4 +1,5 @@
 import { colorValue, materialValue, paramValue, type DecorationKind } from '#/decoration/catalog.ts'
+import { leftOut, optionShift } from '#/decoration/modelOptions.ts'
 import { MODEL_COLOR, modelOf } from '#/decoration/models.ts'
 import { useEased, useTravel } from '#/scene/decor/ease.ts'
 import { Glow, ownShadowless } from '#/scene/decor/LightModel.tsx'
@@ -16,7 +17,7 @@ import { Box3, MathUtils, Quaternion, Vector3, type BufferGeometry, type Group }
 
 type Props = { kind: DecorationKind; item: DecorationConfig; state: ItemState | null }
 
-type DrawnPart = { name: string; geometry: BufferGeometry; motion?: ModelMotion; look?: ModelLook }
+type DrawnPart = { name: string; geometry: BufferGeometry; motion?: ModelMotion; look?: ModelLook; option?: string }
 type Drawn = { size: [number, number, number]; parts: DrawnPart[] }
 
 // A model's parts, made once and drawn by every piece placed from it. What
@@ -32,6 +33,7 @@ const keyOf = (model: ModelConfig) =>
       p.name,
       p.motion,
       p.look,
+      p.option,
       p.vertices?.length,
       p.triangles?.length,
       p.vertices?.slice(0, 32),
@@ -46,6 +48,7 @@ const drawnOf = (shape: Shape): Drawn => ({
     geometry: addGrainUVs(partGeometry(part)),
     ...(part.motion && { motion: part.motion }),
     ...(part.look && { look: part.look }),
+    ...(part.option && { option: part.option }),
   })),
 })
 
@@ -173,6 +176,9 @@ function Moving({
 // it is on or off (see modelTags.ts).
 export default function CustomModel({ kind, item, state }: Props) {
   const drawn = useDrawn(kind.id)
+  const model = modelOf(kind.id)
+  // The options this piece leaves out, by the switches in its panel.
+  const without = leftOut(kind.id, item.params)
   const own = useRef<Group>(null)
   const on = state?.on ?? false
   // How far open it is: the percentage feeding it, or its switch when it has
@@ -193,14 +199,16 @@ export default function CustomModel({ kind, item, state }: Props) {
     let output = 0
     for (const part of drawn?.parts ?? []) {
       if (part.look?.type !== 'glow' || !part.geometry.boundingBox) continue
+      if (part.option && without.split('\n').includes(part.option)) continue
       box.union(part.geometry.boundingBox)
       output = Math.max(output, part.look.output ?? 1)
     }
     if (box.isEmpty()) return null
     const middle = box.getCenter(new Vector3())
     return { at: [middle.x, middle.y, middle.z] as Vec3, output }
-  }, [drawn])
+  }, [drawn, without])
   if (!drawn) return null
+  const left = (part: DrawnPart) => !!part.option && without.split('\n').includes(part.option)
   const w = paramValue(kind, item.params, 'width', item.variant)
   const d = paramValue(kind, item.params, 'depth', item.variant)
   const h = paramValue(kind, item.params, 'height', item.variant)
@@ -210,6 +218,7 @@ export default function CustomModel({ kind, item, state }: Props) {
   const still: ReactNode[] = []
   const moving: ReactNode[] = []
   drawn.parts.forEach((part, i) => {
+    if (left(part)) return
     // A part is painted by its name, and by its place when the file it
     // is read from has changed since it was imported.
     const slot = slots.includes(part.name) ? part.name : slots[i]
@@ -251,11 +260,15 @@ export default function CustomModel({ kind, item, state }: Props) {
         </Moving>,
       )
   })
+  // Without some of its parts the model rests on what is left of it.
+  const shift = times(model ? optionShift(model, item.params) : [0, 0, 0], scale)
   return (
     <group ref={own} position={[0, kind.mount === 'ceiling' ? -h : 0, kind.mount === 'wall' ? d / 2 : 0]}>
-      <group scale={scale}>{still}</group>
-      {moving}
-      {glowAt && <Glow state={state} at={times(glowAt.at, scale)} output={glowAt.output} />}
+      <group position={shift}>
+        <group scale={scale}>{still}</group>
+        {moving}
+        {glowAt && <Glow state={state} at={times(glowAt.at, scale)} output={glowAt.output} />}
+      </group>
     </group>
   )
 }

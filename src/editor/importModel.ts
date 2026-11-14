@@ -6,7 +6,7 @@ import {
   modelBytes,
 } from '#/decoration/models.ts'
 import { fetchShape } from '#/scene/decor/CustomModel.tsx'
-import { encodeShape, readGltf, shapeOf, type Shape } from '#/scene/decor/modelShape.ts'
+import { encodeShape, readGltf, shapeOf, type Shape, shapeExtras } from '#/scene/decor/modelShape.ts'
 import type { ModelConfig } from '#/types.ts'
 
 // Brings a 3D model into the catalog: a .glb, or a .gltf with the files it
@@ -114,7 +114,7 @@ export async function importFiles(files: File[], models: Models): Promise<Import
     size: shape.size,
     triangles: shape.triangles,
     parts: encodeShape(shape),
-    ...(shape.tops.length > 0 && { tops: shape.tops }),
+    ...shapeExtras(shape),
   }
   const bytes = modelBytes(model)
   if (bytes > MODEL_MAX_BYTES)
@@ -161,8 +161,9 @@ export async function importLink(link: string, models: Models): Promise<Imported
       ...(p.look && { look: p.look }),
       ...(p.color && { color: p.color }),
       ...(p.finish && { finish: p.finish }),
+      ...(p.option && { option: p.option }),
     })),
-    ...(shape.tops.length > 0 && { tops: shape.tops }),
+    ...shapeExtras(shape),
     url,
   }
   return { id: idFor(name, models), model }

@@ -5,7 +5,8 @@
 # 2 x 3,85 + 4 x 33,5 + 3 x 1,6 = 146,5.
 # Offen, keine Rückwand. Keine Entity-Bindung, aber Abstellfläche (top: true):
 # oben auf dem Regal und unten in den Fächern lassen sich Objekte platzieren.
-# Schwestermodell: ikea_kallax_1x4_ohne_mittelboden
+# Mittlerer Trennboden als Option: Schalter "Mittelboden" im Objekt-Panel
+# (aus = Fach | Doppelfach 68,6 cm | Fach). Ersetzt ikea_kallax_1x4_ohne_mittelboden.
 name: KALLAX Regal 1x4
 file: ikea_kallax_1x4
 mount: wall
@@ -43,8 +44,9 @@ parts:
     color: "#f2f0eb"
     finish: matte
     mirror: x
-  # Mittlerer Trennboden
-  - name: Boden
+  # Mittlerer Trennboden, im Editor abschaltbar
+  - name: Mittelboden
+    option: Mittelboden
     shape: box
     size: [0.016, 0.338, 0.388]
     at: [0, 0.0385, 0]

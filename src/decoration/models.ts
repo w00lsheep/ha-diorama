@@ -1,4 +1,5 @@
 import type { DecorationKind, DecorationParam, Mount } from '#/decoration/catalog.ts'
+import { optionParams } from '#/decoration/modelOptions.ts'
 import { cleanTops, modelOpens, modelPreferredDomains, modelSignals } from '#/decoration/modelTags.ts'
 import { SCANDI } from '#/theme.ts'
 import type { ModelConfig, ModelTop } from '#/types.ts'
@@ -61,7 +62,9 @@ const signatureOf = (model: ModelConfig) =>
     model.mount,
     model.url,
     model.tops,
-    model.parts.map(p => [p.name, p.motion, p.look, p.color, p.finish]),
+    model.options,
+    model.base,
+    model.parts.map(p => [p.name, p.motion, p.look, p.color, p.finish, p.option]),
   ])
 
 function kindOf(id: string, model: ModelConfig): DecorationKind {
@@ -77,6 +80,8 @@ function kindOf(id: string, model: ModelConfig): DecorationKind {
     const sill = clamp(round2(1.5 - h / 2), 0, 2.5)
     params.push({ id: 'sill', label: 'Off floor', default: sill, min: 0, max: 3, step: 0.01 })
   }
+  // A switch for each part a piece can have or leave out.
+  params.push(...optionParams(model))
   // Each part starts in the paint its material in the file gave it, or in
   // the neutral linen when it had none.
   const hex = (c: unknown) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c : MODEL_COLOR)
