@@ -1,6 +1,7 @@
 import { betweenOf, coversOver } from '#/decoration/between.ts'
 import { decorationKind } from '#/decoration/catalog.ts'
 import { showOnly } from '#/scene/focus.ts'
+import { lean, useDevSettings } from '#/lib/devSettings.ts'
 import type { CardConfig } from '#/types.ts'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
@@ -82,8 +83,11 @@ function staticIds(config: CardConfig, keep?: ReadonlySet<string>) {
 
 // The plain paint of a part, or null when the part is anything else: see
 // through, glowing, textured, drawn in its own order, or left out of the
-// shadows on purpose. Anything not plain keeps its own mesh.
-function plainPaint(mesh: Mesh): MeshStandardMaterial | null {
+// shadows on purpose. Anything not plain keeps its own mesh. With `grouped`
+// a shape split into groups is taken too: with one material three draws it
+// whole and ignores the groups, and so does the merge. Every box, cylinder
+// and cone is split that way, so without it most parts were left out.
+function plainPaint(mesh: Mesh, grouped = false): MeshStandardMaterial | null {
   if ((mesh as { isSkinnedMesh?: boolean }).isSkinnedMesh || mesh.morphTargetInfluences?.length) return null
   if (mesh.renderOrder !== 0 || mesh.layers.mask !== 1) return null
   if (mesh.onBeforeRender !== Object3D.prototype.onBeforeRender) return null
@@ -111,7 +115,7 @@ function plainPaint(mesh: Mesh): MeshStandardMaterial | null {
     return null
   if (m.emissiveIntensity > 0 && (m.emissive.r > 0 || m.emissive.g > 0 || m.emissive.b > 0)) return null
   const geometry = mesh.geometry
-  if (!geometry.attributes.position || geometry.groups.length > 0) return null
+  if (!geometry.attributes.position || (!grouped && geometry.groups.length > 0)) return null
   if ((geometry as { isInstancedBufferGeometry?: boolean }).isInstancedBufferGeometry) return null
   if (geometry.drawRange.start !== 0 || geometry.drawRange.count !== Infinity) return null
   return m
@@ -128,12 +132,12 @@ const place = new Matrix4()
 const turn = new Matrix3()
 const v = new Vector3()
 
-function batches(group: Group, hidden: Mesh[]) {
+function batches(group: Group, hidden: Mesh[], grouped: boolean) {
   const found = new Map<string, Batch>()
   group.traverseVisible(object => {
     if (!(object instanceof Mesh)) return
     const mesh = object as Mesh
-    const paint = plainPaint(mesh)
+    const paint = plainPaint(mesh, grouped)
     if (!paint) return
     const key = `${paint.roughness}|${paint.metalness}|${paint.side}`
     let batch = found.get(key)
@@ -223,7 +227,7 @@ type Baked = { meshes: Mesh[]; hidden: Mesh[] }
 
 // Merges the static pieces of every room and hides their parts. Returns what
 // was made and what was hidden, so both can be undone.
-function bake(scene: Scene, ids: Set<string>): Baked {
+function bake(scene: Scene, ids: Set<string>, grouped: boolean): Baked {
   scene.updateMatrixWorld(true)
   // The groups to take, by the room they stand in.
   const rooms = new Map<string | undefined, Group[]>()
@@ -240,7 +244,7 @@ function bake(scene: Scene, ids: Set<string>): Baked {
   for (const [room, groups] of rooms) {
     const all = new Map<string, Batch>()
     for (const group of groups) {
-      for (const [key, batch] of batches(group, hidden)) {
+      for (const [key, batch] of batches(group, hidden, grouped)) {
         const into = all.get(key)
         if (into) into.copies.push(...batch.copies)
         else all.set(key, batch)
@@ -264,6 +268,12 @@ function bake(scene: Scene, ids: Set<string>): Baked {
       mesh.receiveShadow = true
       // A press on it is one on the floor of the room, as it was on the parts.
       if (room) mesh.userData.room = room
+      // Rays are left to the parts. Three casts them at hidden things too,
+      // so the parts still answer for where they stand, each behind the
+      // sphere round it, where the merged shape spans the room and had
+      // every one of its triangles tried by every ray that crossed it. A
+      // press near a blind casts dozens.
+      mesh.raycast = () => {}
       scene.add(mesh)
       meshes.push(mesh)
     }
@@ -278,6 +288,8 @@ type Props = { config: CardConfig; keep?: ReadonlySet<string> }
 export default function Merged({ config, keep }: Props) {
   const scene = useThree(state => state.scene)
   const invalidate = useThree(state => state.invalidate)
+  // Performance mode also takes the shapes split into groups, see plainPaint.
+  const grouped = lean(useDevSettings())
   // Runs after every model has built and placed its parts, and again from
   // scratch when the plan changes.
   useEffect(() => {
@@ -285,7 +297,7 @@ export default function Merged({ config, keep }: Props) {
     // A part hidden around a focused room would be taken for one that is
     // not plain paint. The focus hides what it has to again on its next frame.
     showOnly(scene, null)
-    const baked = bake(scene, staticIds(config, keep))
+    const baked = bake(scene, staticIds(config, keep), grouped)
     invalidate()
     return () => {
       for (const mesh of baked.hidden) mesh.visible = true
@@ -298,6 +310,6 @@ export default function Merged({ config, keep }: Props) {
       for (const material of materials) material.dispose()
       invalidate()
     }
-  }, [scene, config, keep, invalidate])
+  }, [scene, config, keep, invalidate, grouped])
   return null
 }

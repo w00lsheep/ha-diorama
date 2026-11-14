@@ -265,7 +265,10 @@ export default function Effects({ selected, focus = null }: Props) {
     if (focus !== to.current) {
       from.current = to.current
       to.current = focus
-      faded.current = 0
+      // In performance mode the picture is cut over at once: the fade
+      // draws the whole home twice on every frame of the flight, which is
+      // when frames are dearest anyway.
+      faded.current = lean() ? 1 : 0
       // The fade lasts as long as the flight that takes the camera there.
       const flight = flights.get(camera)?.current
       span.current = flight?.duration ?? FOCUS_FADE_S

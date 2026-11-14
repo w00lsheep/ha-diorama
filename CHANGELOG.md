@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Fixed
+
+- In a home with stairs between floors, pieces painted like the stairs, such as kitchen cabinets, no longer fade away or show see through with them.
+
 ## [1.18.1] - 2026-11-14
 
 ### Changed

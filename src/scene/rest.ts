@@ -11,6 +11,7 @@
 // down.
 
 import { PERFORMANCE_MAX_FPS } from '#/constants.ts'
+import { moved } from '#/lib/hold.ts'
 import type { Camera } from 'three'
 
 // How long the camera has to stand still before the finished frame is drawn.
@@ -68,6 +69,7 @@ export function inMotion(camera: Camera, invalidate: () => void): boolean {
     w.seen.set(m, 0)
     w.seen.set(p, 16)
     w.at = now
+    moved()
     clearTimeout(w.timer)
     w.timer = setTimeout(invalidate, REST_MS + 20)
   }

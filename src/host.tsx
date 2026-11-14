@@ -1,5 +1,6 @@
 import fontsCss from '#/fonts.css?inline'
 import styles from '#/index.css?inline'
+import { hold } from '#/lib/hold.ts'
 import type { HomeAssistant } from '#/types.ts'
 import { StrictMode, type ReactNode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
@@ -117,9 +118,11 @@ export abstract class ReactHost<Config> extends HTMLElement {
     return tree.config as Config | null
   }
 
-  // Called by HA on every state change.
+  // Called by HA on every state change. In performance mode a change that
+  // comes while the camera moves is drawn once it rests, see hold.ts.
   set hass(hass: HomeAssistant) {
     this._hass = hass
+    if (hold(this, () => this.render())) return
     this.render()
   }
 
