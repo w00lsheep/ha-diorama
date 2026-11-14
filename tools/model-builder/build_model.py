@@ -8,12 +8,15 @@ with Diorama behavior tags, e.g. "Shade [glow]" or "Door [hinge y 90]", and a
 group with a motion gets its node origin at its pivot, so the patched Diorama
 importer can swing, slide, spin, light and show/hide them. A part with
 `top: true` is named "Board [top]", which makes its upper face a top other
-pieces can stand on: a table's top, each board of a shelf unit.
+pieces can stand on: a table's top, each board of a shelf unit. A part or
+group with `option: Stand` is tagged "[opt Stand]", which the item panel
+shows as a switch to leave it out with; `option: Cover off` starts it off.
 
 Usage:
   python3 build_model.py spec.yaml -o out/            # .glb + preview + report
   python3 build_model.py spec.yaml -o out/ --no-preview
   python3 build_model.py spec.yaml -o out/ --states 0,0.5,1
+  python3 build_model.py spec.yaml -o out/ --options Stand=0
 
 Needs only numpy and pyyaml; matplotlib for the preview.
 """
@@ -327,6 +330,8 @@ class MeshNode:
     color: str
     finish: str
     top: bool = False  # its upper face is a top other pieces can stand on
+    option: str | None = None  # the option it belongs to, from itself or a group above
+    option_on: bool = True  # whether that option starts on
 
 
 @dataclass
@@ -438,7 +443,27 @@ def mirror_copy(part: dict, axis: str):
     return q
 
 
-def build_tree(items: list, seg: int, path=""):
+def parse_option(value):
+    """An `option:` value like 'Stand' or 'Cover off' as (name, starts on)."""
+    if value is None or value is False:
+        return None, True
+    words = str(value).replace("_", " ").split()
+    on = True
+    if words and words[-1].lower() in ("on", "off"):
+        on = words.pop().lower() == "on"
+    name = " ".join(words).strip()
+    if not name:
+        raise ValueError(f"option '{value}' needs a name, like 'Stand' or 'Cover off'")
+    if "[" in name or "]" in name:
+        raise ValueError(f"option '{value}': no square brackets in an option's name")
+    return name[:40], on
+
+
+def option_tag(name, on):
+    return f" [opt {name}{'' if on else ' off'}]" if name else ""
+
+
+def build_tree(items: list, seg: int, path="", option=(None, True)):
     nodes = []
     for raw in items:
         copies = [raw]
@@ -452,8 +477,10 @@ def build_tree(items: list, seg: int, path=""):
                 if motion and "pivot" not in item:
                     raise ValueError(f"group '{label}' has a motion tag but no pivot")
                 name = f"{label} [{motion or look}]" if (motion or look) else label
+                own = parse_option(item.get("option"))
+                name += option_tag(*own)
                 g = GroupNode(name, label, pivot, motion, look)
-                g.children = build_tree(item.get("parts", []), seg, path + "/" + label)
+                g.children = build_tree(item.get("parts", []), seg, path + "/" + label, own if own[0] else option)
                 nodes.append(g)
             else:
                 label = str(item.get("name", "Part"))
@@ -467,15 +494,18 @@ def build_tree(items: list, seg: int, path=""):
                     raise ValueError(f"part '{label}': color must look like #a1b2c3")
                 mesh = MeshNode(f"{label} [{look}]" if look else label, label, V, F, color, finish)
                 mesh.top = bool(item.get("top", False))
+                own = parse_option(item.get("option"))
+                mesh.option, mesh.option_on = own if own[0] else option
                 if motion:
                     # A motion on a single part: wrap it in a group at its pivot.
                     if "pivot" not in item:
                         raise ValueError(f"part '{label}' has a motion tag but no pivot")
-                    g = GroupNode(f"{label} [{motion}]", label, np.array(item["pivot"], float), motion, None)
+                    g = GroupNode(f"{label} [{motion}]" + option_tag(*own), label, np.array(item["pivot"], float), motion, None)
                     mesh.name = label if not look else mesh.name
                     g.children = [mesh]
                     nodes.append(g)
                 else:
+                    mesh.name += option_tag(*own)
                     nodes.append(mesh)
     return nodes
 
@@ -494,8 +524,10 @@ def walk_meshes(nodes, motion=None, look=None, pivot=None):
             yield from walk_meshes(n.children, m, lk, p)
         else:
             own_look = None
-            if "[" in n.name:
-                own_look = n.name[n.name.index("[") + 1 : n.name.index("]")]
+            tags = re.findall(r"\[([^\]]*)\]", n.name)
+            looks = [t for t in tags if t.split()[0] in LOOKS]
+            if looks:
+                own_look = looks[0]
             yield n, motion, own_look or look, pivot
 
 
@@ -687,17 +719,17 @@ def report(nodes, tri_total, spec, out_glb):
     size = hi - lo
     parts = {}
     for m, motion, look, pivot in meshes:
-        key = (tidy(m.label).lower(), motion, look, None if pivot is None else tuple(np.round(pivot, 4)))
-        parts.setdefault(key, {"name": tidy(m.label), "motion": motion, "look": look,
+        key = (tidy(m.label).lower(), motion, look, None if pivot is None else tuple(np.round(pivot, 4)), m.option)
+        parts.setdefault(key, {"name": tidy(m.label), "motion": motion, "look": look, "option": m.option,
                                "pivot": None if pivot is None else (pivot - middle).round(4).tolist(),
                                "color": m.color, "finish": m.finish, "triangles": 0})
         parts[key]["triangles"] += len(m.F)
     # Name the parts the way Diorama's editor will: still parts first, then
     # the active ones, a repeated name numbered from 2.
     used = set()
-    ordered = [p for p in parts.values() if not p["motion"] and not p["look"]] + [
-        p for p in parts.values() if p["motion"] or p["look"]
-    ]
+    # Parts of an option are kept apart like active ones.
+    kept = lambda p: p["motion"] or p["look"] or p["option"]
+    ordered = [p for p in parts.values() if not kept(p)] + [p for p in parts.values() if kept(p)]
     for i, p in enumerate(ordered):
         base = p["name"] or f"Part {i + 1}"
         name, n = base, 2
@@ -740,10 +772,10 @@ def report(nodes, tri_total, spec, out_glb):
             warnings.append(f"top on '{tidy(m.label)}' is ignored: a part that moves cannot be stood on.")
             continue
         a, b = m.V.min(axis=0), m.V.max(axis=0)
-        box = [float(b[1]), float(a[0]), float(b[0]), float(a[2]), float(b[2])]
+        box = [float(b[1]), float(a[0]), float(b[0]), float(a[2]), float(b[2]), m.option]
         near = 0.005
         for other in boxes:
-            if (abs(other[0] - box[0]) <= near and other[1] <= box[2] + near and box[1] <= other[2] + near
+            if (other[5] == box[5] and abs(other[0] - box[0]) <= near and other[1] <= box[2] + near and box[1] <= other[2] + near
                     and other[3] <= box[4] + near and box[3] <= other[4] + near):
                 other[0] = max(other[0], box[0])
                 other[1], other[2] = min(other[1], box[1]), max(other[2], box[2])
@@ -752,8 +784,9 @@ def report(nodes, tri_total, spec, out_glb):
         else:
             boxes.append(box)
     tops = sorted(
-        ({"height_y": round(y - float(lo[1]), 3), "width_x": round(x1 - x0, 3), "depth_z": round(z1 - z0, 3)}
-         for y, x0, x1, z0, z1 in boxes),
+        ({"height_y": round(y - float(lo[1]), 3), "width_x": round(x1 - x0, 3), "depth_z": round(z1 - z0, 3),
+          **({"option": opt} if opt else {})}
+         for y, x0, x1, z0, z1, opt in boxes),
         key=lambda t: t["height_y"],
     )
     if len(tops) > MAX_TOPS:
@@ -771,11 +804,35 @@ def report(nodes, tri_total, spec, out_glb):
         "bindable": bool(signals),
         "tops": tops,
         "support": bool(tops),
+        "options": options_of(meshes),
         "warnings": warnings,
     }, (lo, hi)
 
 
-def render_preview(nodes, path: Path, title: str, states):
+def options_of(meshes):
+    """The options in the model, in order, each starting off when any part says so."""
+    out = {}
+    for m, *_ in meshes:
+        if m.option:
+            out[m.option] = out.get(m.option, True) and m.option_on
+    return [{"name": k, "on": v} for k, v in out.items()]
+
+
+def option_shift(meshes, shown, mount):
+    """How far the card moves the model to rest on the parts it has left."""
+    allV = np.vstack([m.V for m, *_ in meshes])
+    kept = [m.V for m, *_ in meshes if not m.option or shown.get(m.option, True)]
+    if not kept or len(kept) == len(meshes):
+        return np.zeros(3)
+    V = np.vstack(kept)
+    if mount == "ceiling":
+        return np.array([0.0, allV[:, 1].max() - V[:, 1].max(), 0.0])
+    if mount == "wall":
+        return np.array([0.0, allV[:, 1].min() - V[:, 1].min(), allV[:, 2].min() - V[:, 2].min()])
+    return np.array([0.0, allV[:, 1].min() - V[:, 1].min(), 0.0])
+
+
+def render_preview(nodes, path: Path, title: str, states, shown=None, mount="floor"):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -783,6 +840,8 @@ def render_preview(nodes, path: Path, title: str, states):
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
     meshes = list(walk_meshes(nodes))
+    shown = shown or {}
+    shift = option_shift(meshes, shown, mount)
     allV = np.vstack([m.V for m, *_ in meshes])
     lo, hi = allV.min(axis=0), allV.max(axis=0)
     span = float((hi - lo).max()) * 0.6 + 1e-6
@@ -802,13 +861,15 @@ def render_preview(nodes, path: Path, title: str, states):
             eye_plot = np.array([math.cos(e) * math.cos(a), math.cos(e) * math.sin(a), math.sin(e)])
             eye = np.array([eye_plot[0], eye_plot[2], -eye_plot[1]])
             for m, motion, look, pivot in meshes:
+                if m.option and not shown.get(m.option, True):
+                    continue
                 on = level > 0
                 lk = (look or "").split()[0] if look else None
                 if lk == "on" and not on:
                     continue
                 if lk == "off" and on:
                     continue
-                V = pose(m.V, motion, pivot, level, spin_angle=0.6 * level)
+                V = pose(m.V, motion, pivot, level, spin_angle=0.6 * level) + shift
                 tri = V[m.F]
                 n = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
                 n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
@@ -857,6 +918,7 @@ def main():
     ap.add_argument("-o", "--out", type=Path, default=Path("."))
     ap.add_argument("--no-preview", action="store_true")
     ap.add_argument("--states", default="0,1", help="open levels to preview, e.g. 0,0.5,1")
+    ap.add_argument("--options", default="", help="options to preview set other than they start, e.g. 'Stand=0,Cover=1'")
     args = ap.parse_args()
 
     spec = yaml.safe_load(args.spec.read_text())
@@ -872,8 +934,24 @@ def main():
     rep, _ = report(nodes, tris, spec, glb)
     if not args.no_preview:
         png = args.out / f"{slug}_preview.png"
-        render_preview(nodes, png, name, [float(x) for x in args.states.split(",")])
+        states = [float(x) for x in args.states.split(",")]
+        shown = {o["name"]: o["on"] for o in rep["options"]}
+        for pair in filter(None, args.options.split(",")):
+            key, _, value = pair.partition("=")
+            if key.strip() not in shown:
+                sys.exit(f"no option '{key.strip()}' in this model, it has {sorted(shown) or 'none'}")
+            shown[key.strip()] = value.strip() not in ("0", "off", "false", "")
+        mount = spec.get("mount", "floor")
+        render_preview(nodes, png, name, states, shown, mount)
         rep["preview"] = str(png)
+        # A model with options gets a second preview with each one turned
+        # the other way, so both can be checked.
+        if rep["options"] and not args.options:
+            other = {k: not v for k, v in shown.items()}
+            png2 = args.out / f"{slug}_preview_options.png"
+            label = ", ".join(f"{k} {'an' if v else 'aus'}" for k, v in other.items())
+            render_preview(nodes, png2, f"{name} ({label})", states, other, mount)
+            rep["preview_options"] = str(png2)
     (args.out / f"{slug}_report.json").write_text(json.dumps(rep, indent=2, ensure_ascii=False))
     print(json.dumps(rep, indent=2, ensure_ascii=False))
     if any("refuses" in w for w in rep["warnings"]):

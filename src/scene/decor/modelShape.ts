@@ -9,7 +9,8 @@ import {
   untagged,
   type PartTags,
 } from '#/decoration/modelTags.ts'
-import type { ModelConfig, ModelLook, ModelMotion, ModelTop } from '#/types.ts'
+import { cleanOptions, isBox } from '#/decoration/modelOptions.ts'
+import type { ModelBox, ModelConfig, ModelLook, ModelMotion, ModelOption, ModelTop } from '#/types.ts'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -40,10 +41,20 @@ export type ShapePart = {
   look?: ModelLook
   color?: string
   finish?: string
+  option?: string
 }
 // The width, depth and height are along x, z and y.
 // The tops are the upper faces of the meshes tagged `[top]`, lowest first.
-export type Shape = { size: [number, number, number]; triangles: number; parts: ShapePart[]; tops: ModelTop[] }
+// The options are the parts tagged `[opt <name>]` a piece can leave out,
+// with `base` the box round every other part, both empty without any.
+export type Shape = {
+  size: [number, number, number]
+  triangles: number
+  parts: ShapePart[]
+  tops: ModelTop[]
+  options: ModelOption[]
+  base?: ModelBox
+}
 
 // Edges sharper than this stay sharp, softer ones are shaded round.
 const CREASE = (40 * Math.PI) / 180
@@ -126,6 +137,8 @@ type Piece = {
   // What its material in the file says, when it has one.
   color?: string
   finish?: string
+  // The option it belongs to, and whether that starts on.
+  option?: { name: string; on: boolean }
 }
 
 const FINISHES = new Set(['matte', 'fabric', 'carpet', 'wood', 'ceramic', 'metal', 'glass'])
@@ -156,17 +169,18 @@ function paintOf(gltf: GLTF, material: Mesh['material'] | undefined): { color?: 
     .find(w => FINISHES.has(w))
   const clear = (m.transmission ?? 0) > 0.5 || (!!m.transparent && (m.opacity ?? 1) < 0.9)
   const finish =
-    named ??
-    (clear ? 'glass' : (m.metalness ?? 0) > 0.5 ? 'metal' : (m.roughness ?? 1) < 0.35 ? 'ceramic' : 'matte')
+    named ?? (clear ? 'glass' : (m.metalness ?? 0) > 0.5 ? 'metal' : (m.roughness ?? 1) < 0.35 ? 'ceramic' : 'matte')
   return { ...(m.color && { color: `#${m.color.getHexString()}` }), finish }
 }
 
 // The nearest motion and the nearest look tagged on the mesh or on a node
 // above it, and where the node with the motion has its origin. A top is
-// said by the mesh itself or by any node above it.
-function tagsAbove(gltf: GLTF, object: Object3D): { motion?: ModelMotion; look?: ModelLook; top?: boolean } {
+// said by the mesh itself or by any node above it, and the nearest option
+// counts.
+type Above = { motion?: ModelMotion; look?: ModelLook; top?: boolean; option?: { name: string; on: boolean } }
+function tagsAbove(gltf: GLTF, object: Object3D): Above {
   const json = gltf.parser.json as { nodes?: { name?: string }[]; meshes?: { name?: string }[] }
-  const out: { motion?: ModelMotion; look?: ModelLook; top?: boolean } = {}
+  const out: Above = {}
   for (let o: Object3D | null = object; o; o = o.parent) {
     const at = gltf.parser.associations.get(o) as { nodes?: number; meshes?: number } | undefined
     const names = [
@@ -177,6 +191,7 @@ function tagsAbove(gltf: GLTF, object: Object3D): { motion?: ModelMotion; look?:
       const tags: PartTags = parseTags(name)
       if (tags.top) out.top = true
       if (!out.look && tags.look) out.look = tags.look
+      if (!out.option && tags.option) out.option = tags.option
       if (!out.motion && tags.motion) {
         const origin = new Vector3().setFromMatrixPosition(o.matrixWorld)
         out.motion = { ...tags.motion, pivot: [origin.x, origin.y, origin.z] }
@@ -246,9 +261,14 @@ function piecesOf(gltf: GLTF): Piece[] {
 
 const triangleCount = (pieces: Piece[]) => pieces.reduce((sum, p) => sum + p.index.length / 3, 0)
 
+// A piece of an option is kept apart like one that comes from a device, so
+// leaving the option out never takes a part of anything else with it.
+const keptApart = (p: Piece) => isActive(p) || !!p.option
+
 // What a piece does, so that two pieces of the same name that move round
-// different hinges stay two parts.
-const doing = (p: Piece) => (isActive(p) ? `\u0001${JSON.stringify([p.motion ?? null, p.look ?? null])}` : '')
+// different hinges, or belong to different options, stay two parts.
+const doing = (p: Piece) =>
+  keptApart(p) ? `\u0001${JSON.stringify([p.motion ?? null, p.look ?? null, p.option?.name ?? null])}` : ''
 
 // Pieces with the same name are one part, so the four legs of a table are
 // painted together. A piece with no name is a part of its own.
@@ -257,7 +277,7 @@ function gather(pieces: Piece[], by: (p: Piece) => string): Piece[][] {
   let unnamed = 0
   for (const piece of pieces) {
     const own = by(piece).toLowerCase()
-    const key = own || isActive(piece) ? `${own}${doing(piece)}` : `\u0000${unnamed++}`
+    const key = own || keptApart(piece) ? `${own}${doing(piece)}` : `\u0000${unnamed++}`
     const list = groups.get(key)
     if (list) list.push(piece)
     else groups.set(key, [piece])
@@ -270,9 +290,10 @@ function gather(pieces: Piece[], by: (p: Piece) => string): Piece[][] {
 // smallest go together as Other.
 // The parts that come from a device always stay parts of their own, by
 // name, since what they do is theirs: only the still ones are gathered.
+// So do the parts of an option.
 function partsOf(pieces: Piece[]): { name: string; pieces: Piece[] }[] {
-  const active = gather(pieces.filter(isActive), p => p.name)
-  const still = pieces.filter(p => !isActive(p))
+  const active = gather(pieces.filter(keptApart), p => p.name)
+  const still = pieces.filter(p => !keptApart(p))
   const room = Math.max(MODEL_MAX_PARTS - active.length, 1)
   let groups = gather(still, p => p.name)
   let named = (group: Piece[]) => group[0].name
@@ -314,11 +335,18 @@ const round4 = (value: number) => Math.round(value * 10000) / 10000
 // touch are one top, so a board made of several meshes is stood on as one.
 // `place` takes a corner in the file to where it is in the model.
 function topsOf(pieces: Piece[], place: (value: number, axis: number) => number): ModelTop[] {
-  type Box = { y: number; x0: number; x1: number; z0: number; z1: number }
+  type Box = { y: number; x0: number; x1: number; z0: number; z1: number; option?: string }
   const boxes: Box[] = []
   for (const piece of pieces) {
     if (!piece.top || piece.motion || piece.positions.length === 0) continue
-    const box: Box = { y: -Infinity, x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity }
+    const box: Box = {
+      y: -Infinity,
+      x0: Infinity,
+      x1: -Infinity,
+      z0: Infinity,
+      z1: -Infinity,
+      ...(piece.option && { option: piece.option.name }),
+    }
     for (let i = 0; i < piece.positions.length; i += 3) {
       const x = place(piece.positions[i], 0)
       const y = place(piece.positions[i + 1], 1)
@@ -332,6 +360,7 @@ function topsOf(pieces: Piece[], place: (value: number, axis: number) => number)
     const near = 0.005
     const same = boxes.find(
       b =>
+        b.option === box.option &&
         Math.abs(b.y - box.y) <= near &&
         b.x0 <= box.x1 + near &&
         box.x0 <= b.x1 + near &&
@@ -356,6 +385,7 @@ function topsOf(pieces: Piece[], place: (value: number, axis: number) => number)
       z: round4((b.z0 + b.z1) / 2),
       w: round4(b.x1 - b.x0),
       d: round4(b.z1 - b.z0),
+      ...(b.option && { option: b.option }),
     }))
     .sort((a, b) => a.y - b.y)
 }
@@ -410,6 +440,7 @@ export function shapeOf(gltf: GLTF): Shape {
       ...(first.look && { look: first.look }),
       ...(first.color && { color: first.color }),
       ...(first.finish && { finish: first.finish }),
+      ...(first.option && { option: first.option.name }),
     }
   })
   // To the millimeter, which is how it is written in the config.
@@ -417,8 +448,49 @@ export function shapeOf(gltf: GLTF): Shape {
   const size: [number, number, number] = [mm(max[0] - min[0]), mm(max[2] - min[2]), mm(max[1] - min[1])]
   const triangles = parts.reduce((sum, p) => sum + p.index.length / 3, 0)
   const tops = topsOf(pieces, (value, axis) => (value - middle[axis]) * scale)
-  return { size, triangles, parts, tops }
+  return { size, triangles, parts, tops, ...optionsOf(pieces, (value, axis) => (value - middle[axis]) * scale) }
 }
+
+// The options in a model, in the order the file first names them, each with
+// the box round its parts, and the box round every part of none. An option
+// starts off when any of its parts says so.
+function optionsOf(pieces: Piece[], place: (value: number, axis: number) => number) {
+  const boxes = new Map<string, { on: boolean; box: number[] }>()
+  const grow = (box: number[], piece: Piece) => {
+    for (let i = 0; i < piece.positions.length; i++) {
+      const axis = i % 3
+      const v = place(piece.positions[i], axis)
+      if (v < box[axis]) box[axis] = v
+      if (v > box[axis + 3]) box[axis + 3] = v
+    }
+  }
+  const empty = () => [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]
+  const base = empty()
+  for (const piece of pieces) {
+    if (!piece.option) {
+      grow(base, piece)
+      continue
+    }
+    let own = boxes.get(piece.option.name)
+    if (!own) boxes.set(piece.option.name, (own = { on: true, box: empty() }))
+    if (!piece.option.on) own.on = false
+    grow(own.box, piece)
+  }
+  const boxOf = (b: number[]) => b.map(round4) as ModelBox
+  const options: ModelOption[] = [...boxes]
+    .filter(([, o]) => Number.isFinite(o.box[0]))
+    .map(([name, o]) => ({ name, on: o.on, box: boxOf(o.box) }))
+  if (options.length === 0) return { options }
+  return { options, ...(Number.isFinite(base[0]) && { base: boxOf(base) }) }
+}
+
+// What a model keeps of its tops and options in the card config: nothing
+// for a model without any.
+export const shapeExtras = (shape: Shape): Pick<ModelConfig, 'tops' | 'options' | 'base'> => ({
+  ...(shape.tops.length > 0 && { tops: shape.tops }),
+  ...(shape.options.length > 0 && { options: shape.options }),
+  ...(shape.base && { base: shape.base }),
+})
 
 // Into the card config and back. Each corner is three 16 bit numbers across
 // the model's own box, which keeps a tenth of a millimeter on a meter wide
@@ -456,6 +528,7 @@ export function encodeShape(shape: Shape): ModelConfig['parts'] {
       ...(part.look && { look: part.look }),
       ...(part.color && { color: part.color }),
       ...(part.finish && { finish: part.finish }),
+      ...(part.option && { option: part.option }),
     }
   })
 }
@@ -483,7 +556,15 @@ function decodePart(part: ModelConfig['parts'][number], size: [number, number, n
     }
     const motion = cleanMotion(part.motion)
     const look = cleanLook(part.look)
-    return { name: part.name, positions, index, ...(motion && { motion }), ...(look && { look }) }
+    const option = typeof part.option === 'string' && part.option ? part.option : undefined
+    return {
+      name: part.name,
+      positions,
+      index,
+      ...(motion && { motion }),
+      ...(look && { look }),
+      ...(option && { option }),
+    }
   } catch {
     return null
   }
@@ -496,6 +577,8 @@ export function decodeShape(model: ModelConfig): Shape {
     triangles: parts.reduce((sum, p) => sum + p.index.length / 3, 0),
     parts,
     tops: cleanTops(model.tops),
+    options: cleanOptions(model.options),
+    ...(isBox(model.base) && { base: model.base }),
   }
 }
 

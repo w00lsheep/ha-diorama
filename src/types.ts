@@ -242,6 +242,10 @@ export type ModelConfig = {
   // The tops other pieces can stand on, lowest first, from the parts tagged
   // `[top]` in the file. A model without one carries nothing.
   tops?: ModelTop[]
+  // The parts a piece can have or leave out, and the box round every part
+  // that is not one of them. A model without options carries neither.
+  options?: ModelOption[]
+  base?: ModelBox
   // A file to read the shape from instead, like one in /config/www, which
   // Home Assistant serves as /local/. The parts then only name the colors.
   url?: string
@@ -273,7 +277,18 @@ export type ModelLook = { type: 'glow' | 'led' | 'on' | 'off'; output?: number }
 // of a part tagged `[top]`, like `Board [top]`. In meters in the model's own
 // frame at its own size: `y` is how high it is, `x` and `z` its middle and
 // `w` and `d` how far it reaches along x and along z.
-export type ModelTop = { y: number; x: number; z: number; w: number; d: number }
+// A top on a part that is one of the model's options, named by `option`,
+// is only there while that option is.
+export type ModelTop = { y: number; x: number; z: number; w: number; d: number; option?: string }
+
+// A part of an imported model a piece can have or leave out, set by a switch
+// in the item panel: a monitor's stand, a speaker's cover. Every part tagged
+// `[opt Stand]` in the file is the option Stand, which starts on, or off for
+// `[opt Stand off]`. `box` is the room its parts take in the model's own
+// frame at its own size, as min x, y, z then max x, y, z, so a model without
+// its stand can be stood on what is left.
+export type ModelOption = { name: string; on: boolean; box: ModelBox }
+export type ModelBox = [number, number, number, number, number, number]
 
 export type ModelPart = {
   name: string
@@ -285,6 +300,8 @@ export type ModelPart = {
   finish?: string
   motion?: ModelMotion
   look?: ModelLook
+  // The option it belongs to, when the piece can leave it out.
+  option?: string
 }
 
 export type CardConfig = {

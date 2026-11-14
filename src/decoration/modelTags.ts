@@ -15,6 +15,8 @@ import type { Signal } from '#/signals.ts'
 //   Drawer [slide z 0.4]  comes 40 cm out toward the front as it opens
 //   Rotor [spin y 1.5]    turns one and a half times a second while on
 //   Board [top]           other pieces can stand on its upper face
+//   Stand [opt Stand]     a switch in the item panel leaves it out
+//   Cover [opt Cover off] the same, starting left out
 //
 // A motion turns or moves the part round the origin of the node the tag is
 // on, which is where a hinge goes in Blender: set the object's origin on
@@ -29,6 +31,8 @@ export type PartTags = {
   look?: ModelLook
   // Its upper face is a top for other pieces to stand on.
   top?: boolean
+  // The option it belongs to, and whether that starts on.
+  option?: { name: string; on: boolean }
 }
 
 const AXES: Record<string, [number, number, number]> = {
@@ -70,6 +74,12 @@ export function parseTags(raw: string | undefined): PartTags {
       out.look = type === 'glow' ? { type, output: Math.min(Math.max(number(args[0], 1), 0.05), 3) } : { type }
     } else if (type === 'top') {
       out.top = true
+    } else if (type === 'opt' && !out.option) {
+      // The name can be several words. A last word of off starts it off.
+      const last = args[args.length - 1]?.toLowerCase()
+      const flag = last === 'off' || last === 'on'
+      const name = (flag ? args.slice(0, -1) : args).join(' ').replace(/_/g, ' ').trim().slice(0, 40)
+      if (name) out.option = { name, on: last !== 'off' }
     }
   }
   return out
@@ -125,7 +135,14 @@ export function cleanTops(tops: unknown): ModelTop[] {
     .filter((t): t is ModelTop => !!t && typeof t === 'object' && [t.y, t.x, t.z, t.w, t.d].every(ok))
     .filter(t => t.y >= 0 && t.w > 0 && t.d > 0)
     .slice(0, MODEL_MAX_TOPS)
-    .map(t => ({ y: t.y, x: t.x, z: t.z, w: t.w, d: t.d }))
+    .map(t => ({
+      y: t.y,
+      x: t.x,
+      z: t.z,
+      w: t.w,
+      d: t.d,
+      ...(typeof t.option === 'string' && t.option && { option: t.option }),
+    }))
     .sort((a, b) => a.y - b.y)
 }
 
