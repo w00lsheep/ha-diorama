@@ -1,0 +1,151 @@
+# Teufel Ultima 20 (Mk4) Regallautsprecher.
+# Maße laut teufel.de: 21,5 x 33,5 x 25,1 cm (B x H x T), 4 Gummifüße.
+# Front: Hochtöner 25 mm oben, Tiefmitteltöner 165 mm (Kevlar, Phase-Plug) unten. Hinten: 1 Bassreflexrohr, Terminal.
+# Stoff-Frontabdeckung als Option: Schalter "Abdeckung" im Objekt-Panel, startet aus.
+# Farbe Schwarz; für Weiß im Editor die Slots "Gehaeuse" (und "Abdeckung") umfärben.
+name: Teufel Ultima 20
+file: teufel_ultima_20
+mount: floor
+segments: 28
+parts:
+- name: Fuss
+  shape: cylinder
+  radius: 0.011
+  height: 0.005
+  at: [-0.0775, 0, -0.083]
+  color: '#0c0c0c'
+  finish: matte
+- name: Fuss
+  shape: cylinder
+  radius: 0.011
+  height: 0.005
+  at: [-0.0775, 0, 0.083]
+  color: '#0c0c0c'
+  finish: matte
+- name: Fuss
+  shape: cylinder
+  radius: 0.011
+  height: 0.005
+  at: [0.0775, 0, -0.083]
+  color: '#0c0c0c'
+  finish: matte
+- name: Fuss
+  shape: cylinder
+  radius: 0.011
+  height: 0.005
+  at: [0.0775, 0, 0.083]
+  color: '#0c0c0c'
+  finish: matte
+- name: Gehaeuse
+  shape: box
+  size: [0.215, 0.33, 0.226]
+  radius: 0.012
+  at: [0, 0.005, 0]
+  color: '#1d1d1f'
+  finish: matte
+  top: true
+- name: Ring
+  shape: cylinder
+  radius: 0.045
+  height: 0.008
+  rot: [90, 0, 0]
+  at: [0, 0.272, 0.113]
+  color: '#0f0f10'
+  finish: ceramic
+- name: Sicke
+  shape: torus
+  radius: 0.0279
+  tube: 0.005
+  rot: [90, 0, 0]
+  at: [0, 0.272, 0.121]
+  color: '#1a1a1a'
+  finish: matte
+- name: Hochtoener
+  shape: sphere
+  radius: 0.016
+  dome: true
+  scale: [1, 0.7, 1]
+  rot: [90, 0, 0]
+  at: [0, 0.272, 0.11900000000000001]
+  color: '#3b3c3e'
+  finish: metal
+- name: Ring
+  shape: cylinder
+  radius: 0.088
+  height: 0.006
+  rot: [90, 0, 0]
+  at: [0, 0.137, 0.113]
+  color: '#0f0f10'
+  finish: ceramic
+- name: Sicke
+  shape: torus
+  radius: 0.0722
+  tube: 0.007
+  rot: [90, 0, 0]
+  at: [0, 0.137, 0.11900000000000001]
+  color: '#1a1a1a'
+  finish: matte
+- name: Membran
+  shape: lathe
+  profile:
+  - [0, 0]
+  - [0.0669, 0]
+  - [0.0669, 0.011]
+  - [0, 0.003]
+  rot: [90, 0, 0]
+  at: [0, 0.137, 0.113]
+  color: '#c97a4f'
+  finish: fabric
+- name: Phaseplug
+  shape: lathe
+  profile:
+  - [0, 0]
+  - [0.012, 0]
+  - [0.012, 0.011]
+  - [0.007, 0.015]
+  - [0, 0.018]
+  rot: [90, 0, 0]
+  at: [0, 0.137, 0.113]
+  color: '#b8bbbe'
+  finish: metal
+- name: Logo
+  shape: box
+  size: [0.04, 0.009, 0.002]
+  radius: 0.001
+  at: [0, 0.02, 0.1135]
+  color: '#d8d8d8'
+  finish: matte
+- name: Reflexrohr
+  shape: cylinder
+  radius: 0.03
+  height: 0.004
+  rot: [-90, 0, 0]
+  at: [0, 0.22, -0.113]
+  color: '#0a0a0a'
+  finish: matte
+- name: Terminal
+  shape: box
+  size: [0.08, 0.09, 0.006]
+  radius: 0.003
+  at: [0, 0.05, -0.116]
+  color: '#111112'
+  finish: matte
+
+# --- Stoff-Frontabdeckung, im Editor zuschaltbar (4-5 mm vor den Phase-Plugs) ---
+- group: Abdeckung
+  option: Abdeckung off
+  parts:
+  - name: Abdeckung
+    shape: box
+    size: [0.211, 0.322, 0.02]
+    radius: 0.007
+    at: [0, 0.009, 0.123]
+    color: '#2a2a2c'
+    finish: fabric
+  - name: Abdeckungslogo
+    shape: box
+    size: [0.04, 0.009, 0.002]
+    radius: 0.001
+    at: [0, 0.02, 0.1345]
+    color: '#d8d8d8'
+    finish: matte
