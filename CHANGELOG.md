@@ -9,6 +9,8 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-11-14
+
 ### Added
 
 - Parts of imported models with the wood finish show the card's oak grain along their longest side, and a new carpet finish gives a soft pile.
@@ -772,7 +774,8 @@ moves that section under the new version and uses it as the release notes.
 
 ### Changed
 
-[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.12.0...v1.13.0
