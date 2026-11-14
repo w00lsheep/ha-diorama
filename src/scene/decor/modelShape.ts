@@ -128,7 +128,7 @@ type Piece = {
   finish?: string
 }
 
-const FINISHES = new Set(['matte', 'fabric', 'wood', 'ceramic', 'metal', 'glass'])
+const FINISHES = new Set(['matte', 'fabric', 'carpet', 'wood', 'ceramic', 'metal', 'glass'])
 
 // The paint a material in the file stands for: its color, and a finish by
 // its name when that is one of the card's, or else glass for a see through

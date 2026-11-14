@@ -4,9 +4,11 @@ import { useEased, useTravel } from '#/scene/decor/ease.ts'
 import { Glow, ownShadowless } from '#/scene/decor/LightModel.tsx'
 import { ShadeMaterial } from '#/scene/decor/lightMaterials.tsx'
 import { Glass, Material } from '#/scene/decor/parts.tsx'
+import { addGrainUVs } from '#/scene/decor/modelGrain.ts'
 import { decodeShape, fetchGltf, partGeometry, shapeOf, type Shape } from '#/scene/decor/modelShape.ts'
 import type { ItemState } from '#/scene/decor/state.ts'
 import { shadowless, useLive } from '#/scene/live.ts'
+import SurfaceMaterial from '#/scene/SurfaceMaterial.tsx'
 import type { DecorationConfig, ModelConfig, ModelLook, ModelMotion } from '#/types.ts'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -41,7 +43,7 @@ const drawnOf = (shape: Shape): Drawn => ({
   size: shape.size,
   parts: shape.parts.map(part => ({
     name: part.name,
-    geometry: partGeometry(part),
+    geometry: addGrainUVs(partGeometry(part)),
     ...(part.motion && { motion: part.motion }),
     ...(part.look && { look: part.look }),
   })),
@@ -234,6 +236,8 @@ export default function CustomModel({ kind, item, state }: Props) {
           <ShadeMaterial color={color} material={finish} state={state} solid={look === 'led'} />
         ) : clear ? (
           <Glass color={color} opacity={GLASS_OPACITY} />
+        ) : finish === 'wood' || finish === 'carpet' ? (
+          <SurfaceMaterial kind={finish} color={color} />
         ) : (
           <Material color={color} material={finish} />
         )}

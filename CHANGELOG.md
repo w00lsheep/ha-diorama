@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- Parts of imported models with the wood finish show the card's oak grain along their longest side, and a new carpet finish gives a soft pile.
+
 ## [1.15.0] - 2026-11-13
 
 ### Added
