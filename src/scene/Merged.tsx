@@ -268,6 +268,12 @@ function bake(scene: Scene, ids: Set<string>, grouped: boolean): Baked {
       mesh.receiveShadow = true
       // A press on it is one on the floor of the room, as it was on the parts.
       if (room) mesh.userData.room = room
+      // Rays are left to the parts. Three casts them at hidden things too,
+      // so the parts still answer for where they stand, each behind the
+      // sphere round it, where the merged shape spans the room and had
+      // every one of its triangles tried by every ray that crossed it. A
+      // press near a blind casts dozens.
+      mesh.raycast = () => {}
       scene.add(mesh)
       meshes.push(mesh)
     }
