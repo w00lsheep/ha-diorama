@@ -9,6 +9,8 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-11-14
+
 ### Added
 
 - A piece on a wall can hang on another one, like a picture on an acoustic panel: it then sits in front of it instead of inside it, dragging it over an imported model on the wall hangs it there, and the item panel lets you pick what it hangs on.
@@ -778,7 +780,8 @@ moves that section under the new version and uses it as the release notes.
 
 ### Changed
 
-[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/CarlesRojas/ha-diorama/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/CarlesRojas/ha-diorama/compare/v1.13.0...v1.14.0
