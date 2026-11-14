@@ -115,6 +115,8 @@ export default function Scene({
   // bubbling, and the camera rig can keep a click from them. They are only
   // mounted once it is there to listen on.
   const [frame, setFrame] = useState<HTMLDivElement | null>(null)
+  // The density the picture is drawn at, as Adaptive last chose it.
+  const [dpr, setDpr] = useState<number | [number, number]>([1, 2])
 
   return (
     // In the card a finger that sets off up or down scrolls the dashboard
@@ -131,7 +133,7 @@ export default function Scene({
         shadows={{ type: PCFShadowMap }}
         // A frame is drawn only when something has changed, see live.ts.
         frameloop={paused ? 'never' : 'demand'}
-        dpr={[1, 2]}
+        dpr={dpr}
         // The frame is finished from a buffer and smoothed there, so the
         // screen's own smoothing would only cost.
         gl={{ alpha: true, antialias: false }}
@@ -153,7 +155,7 @@ export default function Scene({
           around it onto the floor. */}
         <Shadows />
         <Cleanup />
-        <Adaptive />
+        <Adaptive onDpr={setDpr} />
         {fpsTicks && <FpsTicker ticks={fpsTicks} />}
         <CameraRig
           rooms={rooms}

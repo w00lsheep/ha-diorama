@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Changed
+
+- On a phone or tablet the home turns and zooms more smoothly: while it moves it is drawn plainer and less sharp, and as soon as it stands still it is drawn in full again.
+
 ## [1.18.0] - 2026-11-14
 
 ### Added

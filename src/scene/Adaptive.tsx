@@ -2,7 +2,9 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { LIVE_FPS } from '#/constants.ts'
 import { beating } from '#/scene/live.ts'
 import { due } from '#/scene/pace.ts'
-import { useEffect, useRef } from 'react'
+import { lean, useDevSettings } from '#/lib/devSettings.ts'
+import { LEAN_BUDGET_MS, LEAN_EASY, LEAN_IDLE_MS, LEAN_LATE, LEAN_START, LEAN_STEPS, LEAN_WINDOW, moving } from '#/scene/rest.ts'
+import { useCallback, useEffect, useRef } from 'react'
 
 // The picture is drawn at the screen's own density, up to twice the CSS
 // pixels each way, which on a tablet is four times the pixels of a laptop
@@ -31,8 +33,22 @@ const EASY = 1.15
 const PATIENCE = 3
 const MAX_UPS = 2
 
-export default function Adaptive() {
-  const setDpr = useThree(state => state.setDpr)
+type Props = {
+  // Told each density chosen. The canvas sets its density again from its
+  // own props each time it draws anew, which is on every change Home
+  // Assistant reports, so it has to be handed the one chosen here.
+  onDpr?: (dpr: number) => void
+}
+
+export default function Adaptive({ onDpr }: Props) {
+  const setCanvasDpr = useThree(state => state.setDpr)
+  const setDpr = useCallback(
+    (dpr: number) => {
+      setCanvasDpr(dpr)
+      onDpr?.(dpr)
+    },
+    [setCanvasDpr, onDpr],
+  )
   const invalidate = useThree(state => state.invalidate)
   const steps = useRef<number[]>([])
   const level = useRef(0)
@@ -41,13 +57,25 @@ export default function Adaptive() {
   const fastest = useRef(Infinity)
   const easy = useRef(0)
   const ups = useRef(0)
+  // Performance mode has steps of its own, coarser ones, starts a step or
+  // two down, and only times the frames drawn while the camera moves, see
+  // rest.ts.
+  const leaner = lean(useDevSettings())
 
   useEffect(() => {
     const max = Math.min(window.devicePixelRatio || 1, 2)
-    steps.current = STEPS.filter(s => s < max)
+    steps.current = (leaner ? LEAN_STEPS : STEPS).filter(s => s < max)
     steps.current.push(max)
     level.current = steps.current.length - 1
-  }, [])
+    if (leaner) {
+      const start = steps.current.findIndex(s => s >= LEAN_START)
+      if (start >= 0) level.current = start
+    }
+    times.current.length = 0
+    easy.current = 0
+    ups.current = 0
+    setDpr(steps.current[level.current])
+  }, [leaner, setDpr])
 
   useFrame(state => {
     // Only the frames drawn are timed. The ticks between them cost nothing.
@@ -55,23 +83,27 @@ export default function Adaptive() {
     const now = performance.now()
     const gap = now - last.current
     last.current = now
-    const idle = beating(invalidate) ? Math.min(IDLE_MS, BEAT_MS) : IDLE_MS
-    if (gap > idle || gap <= 0) {
-      times.current.length = 0
+    const idle = leaner ? LEAN_IDLE_MS : beating(invalidate) ? Math.min(IDLE_MS, BEAT_MS) : IDLE_MS
+    if (gap > idle || gap <= 0 || (leaner && !moving(state.camera))) {
+      // A swipe on a tablet is short, so performance mode gathers its window
+      // over several of them.
+      if (!leaner) times.current.length = 0
       return
     }
     fastest.current = Math.max(4, Math.min(fastest.current, gap))
     times.current.push(gap)
-    if (times.current.length < WINDOW) return
+    if (times.current.length < (leaner ? LEAN_WINDOW : WINDOW)) return
     const mean = times.current.reduce((a, b) => a + b, 0) / times.current.length
     times.current.length = 0
     const at = level.current
-    if (mean > fastest.current * LATE && at > 0) {
+    const late = leaner ? LEAN_BUDGET_MS * LEAN_LATE : fastest.current * LATE
+    const comfortable = leaner ? LEAN_BUDGET_MS * LEAN_EASY : fastest.current * EASY
+    if (mean > late && at > 0) {
       level.current = at - 1
       easy.current = 0
       setDpr(steps.current[level.current])
       invalidate()
-    } else if (mean < fastest.current * EASY && at < steps.current.length - 1 && ups.current < MAX_UPS) {
+    } else if (mean < comfortable && at < steps.current.length - 1 && ups.current < MAX_UPS) {
       if (++easy.current < PATIENCE) return
       easy.current = 0
       ups.current++

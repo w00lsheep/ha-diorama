@@ -5,6 +5,8 @@ import { EDITOR_SELECTED_COLOR } from '#/theme.ts'
 import { FOCUS_FADE_S } from '#/constants.ts'
 import { redrawShadows, showOnly } from '#/scene/focus.ts'
 import { setComposed } from '#/scene/warm.ts'
+import { lean } from '#/lib/devSettings.ts'
+import { inMotion, SHADE_IN_S } from '#/scene/rest.ts'
 import { useFrame, useThree } from '@react-three/fiber'
 import { N8AOPostPass } from 'n8ao'
 import {
@@ -94,8 +96,21 @@ type Pipeline = {
   outline: OutlineEffect | null
   // What lays the finished picture on the screen, and how much of what is
   // already there it replaces: all of it, but for the second picture of a
-  // fade.
-  paint: Material
+  // fade. One for each of the two last steps below.
+  paint: Material[]
+  // The shading where things meet, and the two ways the picture is
+  // finished: in full, or in performance mode while the camera moves only
+  // tone mapped, see rest.ts.
+  ao: N8AOPostPass
+  full: EffectPass
+  quick: EffectPass
+  // How far the shading has come back since the camera came to rest, 0 to 1.
+  shade: number
+}
+
+// How much of what the screen holds the finished picture replaces.
+function lay(run: Pipeline, share: number) {
+  for (const paint of run.paint) paint.blendAlpha = share
 }
 
 export default function Effects({ selected, focus = null }: Props) {
@@ -139,31 +154,40 @@ export default function Effects({ selected, focus = null }: Props) {
         multisampling: 4,
       })
     }
-    const last = new EffectPass(
+    const full = new EffectPass(
       camera,
       ...(outline ? [outline] : []),
       new SMAAEffect({ preset: SMAAPreset.HIGH }),
       new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }),
     )
+    const quick = new EffectPass(camera, new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }))
+    quick.enabled = false
     // The picture replaces a share of what the screen holds. The share is
     // all of it but during a fade, and it is set up this way from the start
     // so the fade changes a number and not the shader.
-    const paint = last.fullscreenMaterial
-    paint.blending = CustomBlending
-    paint.blendSrc = ConstantAlphaFactor
-    paint.blendDst = OneMinusConstantAlphaFactor
-    paint.blendAlpha = 1
-    // Laid over what is there, the screen must not be cleared first.
-    const draw = last.render.bind(last)
-    last.render = (...args: Parameters<EffectPass['render']>) => {
-      const renderer = args[0]
-      const clears = renderer.autoClear
-      if (paint.blendAlpha < 1) renderer.autoClear = false
-      draw(...args)
-      renderer.autoClear = clears
+    const finish = (last: EffectPass) => {
+      const paint = last.fullscreenMaterial
+      paint.blending = CustomBlending
+      paint.blendSrc = ConstantAlphaFactor
+      paint.blendDst = OneMinusConstantAlphaFactor
+      paint.blendAlpha = 1
+      // Laid over what is there, the screen must not be cleared first.
+      const draw = last.render.bind(last)
+      last.render = (...args: Parameters<EffectPass['render']>) => {
+        const renderer = args[0]
+        const clears = renderer.autoClear
+        if (paint.blendAlpha < 1) renderer.autoClear = false
+        draw(...args)
+        renderer.autoClear = clears
+      }
+      composer.addPass(last)
+      return paint
     }
-    composer.addPass(last)
-    pipeline.current = { composer, outline, paint }
+    const paint = [finish(full), finish(quick)]
+    // Only one of the two is on at a time, and either draws to the screen.
+    full.renderToScreen = true
+    quick.renderToScreen = true
+    pipeline.current = { composer, outline, paint, ao, full, quick, shade: 1 }
     found.current = null
     // The shaders the scene needs are now the ones for drawing into a
     // buffer, and the ones built ahead of a light change must match.
@@ -235,7 +259,7 @@ export default function Effects({ selected, focus = null }: Props) {
       cutTo(room)
       if (shaded.current !== room) redrawShadows(scene)
       shaded.current = room
-      run.paint.blendAlpha = share
+      lay(run, share)
       run.composer.render(delta)
     }
     if (focus !== to.current) {
@@ -257,6 +281,19 @@ export default function Effects({ selected, focus = null }: Props) {
       invalidate()
       return
     }
+    // In performance mode the picture is drawn plainly while the camera
+    // moves, and in full once it rests, the shading easing back in. The
+    // editor keeps its outline, which is part of the full finish.
+    const plain = lean() && !run.outline && inMotion(camera, invalidate)
+    if (plain) run.shade = 0
+    else if (run.shade < 1) {
+      run.shade = Math.min(1, run.shade + Math.min(delta, 0.05) / SHADE_IN_S)
+      if (run.shade < 1) invalidate()
+    }
+    run.ao.enabled = !plain
+    run.ao.configuration.intensity = AO_INTENSITY * run.shade
+    run.full.enabled = !plain
+    run.quick.enabled = plain
     const t = faded.current
     if (t === 1) draw(to.current, 1)
     else {
@@ -264,7 +301,7 @@ export default function Effects({ selected, focus = null }: Props) {
       // drawn last, so it is the one that takes presses from the start.
       draw(from.current, 1)
       draw(to.current, t * t * (3 - 2 * t))
-      run.paint.blendAlpha = 1
+      lay(run, 1)
     }
     // A priority above zero takes the drawing over from the default loop,
     // which is what lets the composer be the one to draw the frame.

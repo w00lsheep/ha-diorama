@@ -1,3 +1,4 @@
+import { lean } from '#/lib/devSettings.ts'
 import { beating } from '#/scene/live.ts'
 import { ahead, balance } from '#/scene/pad.ts'
 import { useWarm } from '#/scene/warm.ts'
@@ -218,6 +219,9 @@ export default function Shadows() {
       if (balance(scene, true)) get().invalidate()
       if (!armed.current) return
       armed.current = false
+      // Performance mode draws no shadows at all, so there is nothing to
+      // keep up to date.
+      if (lean()) return
       check()
     }
     return () => {
