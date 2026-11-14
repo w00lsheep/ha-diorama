@@ -9,6 +9,10 @@ moves that section under the new version and uses it as the release notes.
 
 ## [Unreleased]
 
+### Added
+
+- A piece on a wall can hang on another one, like a picture on an acoustic panel: it then sits in front of it instead of inside it, dragging it over an imported model on the wall hangs it there, and the item panel lets you pick what it hangs on.
+
 ## [1.16.0] - 2026-11-14
 
 ### Added

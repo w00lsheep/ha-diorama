@@ -4,6 +4,7 @@ import { usePressActions, type PressAction } from '#/scene/decor/press.ts'
 import { DragBadge, DragGhost, travelOf, useDrag, type DragAction } from '#/scene/decor/drag.tsx'
 import { grabs, type Grab } from '#/scene/drags.ts'
 import { standHeight } from '#/decoration/surfaces.ts'
+import { hungAt, wallOffset } from '#/decoration/backing.ts'
 import { elevationOf } from '#/geometry/elevation.ts'
 import ApplianceModel from '#/scene/decor/ApplianceModel.tsx'
 import CustomModel from '#/scene/decor/CustomModel.tsx'
@@ -182,12 +183,14 @@ function DecorationModel({
   // it meets the wall. The piece itself keeps facing its room, so it is still
   // in that room and its clicks still go where they did.
   const outside = paramValue(kind, item.params, 'outside', item.variant) > 0.5
+  // A wall piece hanging on another one hangs out in front of it.
+  const at = hungAt(item, all)
 
   return (
     <group
       // Named so the editor's outline can find the piece that is picked.
       name={`decoration:${item.id}`}
-      position={[item.position[0], lift, -item.position[1]]}
+      position={[at[0], lift, -at[1]]}
       rotation={[0, rotation, 0]}
       // A press that lands near this item rather than on it finds these. A
       // piece with nothing to do says which room it stands in instead, so a
@@ -243,7 +246,11 @@ function unchanged(a: Props, b: Props) {
   if (a.onDrag !== b.onDrag || a.passDrag !== b.passDrag) return false
   if (!sameState(a.state, b.state)) return false
   if (a.all === b.all) return true
-  return !READS_PLAN.has(a.item.kind) && standHeight(a.item, a.all) === standHeight(b.item, b.all)
+  return (
+    !READS_PLAN.has(a.item.kind) &&
+    standHeight(a.item, a.all) === standHeight(b.item, b.all) &&
+    wallOffset(a.item, a.all) === wallOffset(b.item, b.all)
+  )
 }
 
 export default memo(DecorationModel, unchanged)

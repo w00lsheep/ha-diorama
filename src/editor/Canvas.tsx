@@ -16,6 +16,7 @@ import {
 } from '#/constants.ts'
 import { canRide, decorationKind, footprint, isSupport } from '#/decoration/catalog.ts'
 import { ridersOf, standHeight, supportUnder } from '#/decoration/surfaces.ts'
+import { backingUnder, carryHanger } from '#/decoration/backing.ts'
 import { decorationIcon } from '#/decoration/icons.ts'
 import { TRACE_LEAST_WIDTH_M, traceCovers, type Trace } from '#/editor/trace.ts'
 import { TraceFrame, TraceImage } from '#/editor/TraceLayer.tsx'
@@ -469,6 +470,11 @@ export default function Canvas({
           // Wall items sit on the nearest wall of the room and face inward.
           const snapped = snapToWall(target, roomFor.points)
           landing = { ...landing, position: snapped.point, rotation: snapped.rotation }
+          // Over another wall piece it hangs in front of it.
+          const { on: _on, ...loose } = landing
+          const back = backingUnder(loose, current)
+          landing = back ? { ...loose, on: back.id } : loose
+          setHoverSupport(back?.id ?? null)
         } else if (!over && home) {
           const from = item.position
           let lo = 0
@@ -491,7 +497,7 @@ export default function Canvas({
         // What it comes to rest on: the highest top under it, or the floor.
         // A piece put on the floor from its panel stays there, so it can be
         // slid under a table without climbing onto it.
-        if (kind && canRide(kind) && !(item.floor && !item.on)) {
+        if (kind && kind.mount !== 'wall' && canRide(kind) && !(item.floor && !item.on)) {
           const under = supportUnder(landing.position, { ...item, room: landing.room }, current)
           const support = under?.support
           if (under && support) {
@@ -513,7 +519,9 @@ export default function Canvas({
         const dx = landing.position[0] - item.position[0]
         const dy = landing.position[1] - item.position[1]
         const carry = (x: DecorationConfig): DecorationConfig =>
-          riders.has(x.id)
+          riders.has(x.id) && kind?.mount === 'wall' && decorationKind(x.kind)?.mount === 'wall'
+            ? carryHanger(x, item, landing)
+            : riders.has(x.id)
             ? {
                 ...x,
                 position: [round(x.position[0] + dx), round(x.position[1] + dy)] as Point,

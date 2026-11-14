@@ -20,6 +20,7 @@ import { heavyNote, importFiles, importLink, sizeNote } from '#/editor/importMod
 import { placeableEntities } from '#/devices/catalog.ts'
 import ModelPreview from '#/editor/ModelPreview.tsx'
 import TrySection from '#/editor/TrySection.tsx'
+import HangingOn from '#/editor/HangingOn.tsx'
 import { canTry, type TryState, type TryStates } from '#/editor/tryState.ts'
 import { PreviewHandle, ResetButton, SelectedHeader, Signals, Slider, Sticky, Switch } from '#/editor/panel.tsx'
 import { snapToWall } from '#/editor/walls.ts'
@@ -614,6 +615,8 @@ export default function DecorationPanel({
             )}
           </div>
         )}
+
+        <HangingOn item={item} decorations={decorations} accent={accent} onUpdate={onUpdate} onPoint={onPointTop} />
 
         {/* The surface of each part is part of what the piece is. Only its
             color is the viewer's to pick. */}
