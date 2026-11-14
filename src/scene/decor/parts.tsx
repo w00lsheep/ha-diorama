@@ -55,6 +55,9 @@ function sharedMaterial(color: string, roughness: number, doubleSide: boolean) {
   let found = shared.get(key)
   if (!found) {
     found = new MeshStandardMaterial({ color, roughness, side: doubleSide ? DoubleSide : FrontSide })
+    // Marked, so whatever changes a part's material in place, like a fade,
+    // changes a copy instead of every part painted the same.
+    found.userData.shared = true
     shared.set(key, found)
   }
   return found

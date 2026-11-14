@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import type { Group, Material, Mesh, WebGLProgramParametersWithUniforms, WebGLRenderer } from 'three'
 
 // A piece that fades away with height: whole at one height, gone at
@@ -54,6 +54,15 @@ function patch(material: Material, uniforms: Uniforms) {
 export function Faded({ fade, children }: { fade?: Fade; children: ReactNode }) {
   const group = useRef<Group>(null)
   const uniforms = useRef<Uniforms>({ uDioFadeFrom: { value: 0 }, uDioFadeTo: { value: 1 } })
+  // The copies made of shared materials, by the material they copy.
+  const copies = useRef(new Map<Material, Material>())
+  useEffect(() => {
+    const made = copies.current
+    return () => {
+      for (const copy of made.values()) copy.dispose()
+      made.clear()
+    }
+  }, [])
   // Every render, since a part built since has a material of its own.
   useLayoutEffect(() => {
     if (!fade || !group.current) return
@@ -62,6 +71,22 @@ export function Faded({ fade, children }: { fade?: Fade; children: ReactNode }) 
     group.current.traverse(object => {
       const mesh = object as Mesh
       if (!mesh.isMesh) return
+      // A material shared with parts elsewhere in the home is swapped for
+      // a copy of its own first. Patched in place, every part painted the
+      // same, a kitchen counter or a cabinet, faded with the stairs and was
+      // drawn as see through.
+      const own = (material: Material) => {
+        if (!material.userData.shared) return material
+        let copy = copies.current.get(material)
+        if (!copy) {
+          copy = material.clone()
+          delete copy.userData.shared
+          copies.current.set(material, copy)
+        }
+        return copy
+      }
+      if (Array.isArray(mesh.material)) mesh.material = mesh.material.map(own)
+      else mesh.material = own(mesh.material)
       for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
         patch(material, uniforms.current)
       }
